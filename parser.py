@@ -2,11 +2,11 @@
 Based on http://chronos-st.blogspot.com/2007/12/smalltalk-in-one-page.html
 """
 
-from parson import Grammar, hug
+from parson import Grammar, hug, join
 import terp
 
 grammar = r"""
-top = _ code.
+top = _ code ~/./.
 other_top = method_decl.
 
 method_decl = method_header code.
@@ -28,7 +28,7 @@ stmt = bindable ':='_ expr :mk_var_set
      | '^'_ expr  # XXXsemantics
      | expr.
 
-expr = operand m1 :mk_send (';'_ m1 :mk_cascade)*.
+expr = operand (m1 :mk_send (';'_ m1 :mk_cascade)*)?.
 m1 = unary_selector m1? :mk_m1 | m2.
 e1 = operand (unary_selector :mk_e1)*.
 m2 = binary_selector e1 m2? :mk_m2 | m3.
@@ -48,7 +48,7 @@ literal = constant_ref
         | /super\b/_  # XXXsemantics
         | /-?(\d+)/_  :mk_int  # XXX add base-r literals, floats, and scaled decimals
         | '$' /(.)/_  # XXXsemantics  # char literal
-        | string_literal          # XXXsemantics
+        | string_literal :mk_string
         | '#['_ (/(\d+)/_)* ']'_  # XXXsemantics
         | '#' nested_array        # XXXsemantics
         | '#'_ (symbol_in_array | constant_ref | string_literal). # XXXsemantics
@@ -57,7 +57,7 @@ constant_ref = /nil\b/_    :mk_nil
              | /false\b/_  :mk_false
              | /true\b/_   :mk_true.
 
-string_literal = /'/ qchar* /'/_.
+string_literal = /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
 nested_array = '('_ array_element* ')'_.
@@ -73,11 +73,12 @@ _ = (/\s/ | comment)*.
 comment = /"[^"]*"/.
 """
 
-mk_nil   = lambda: terp.Constant(None)
-mk_false = lambda: terp.Constant(False)
-mk_true  = lambda: terp.Constant(True)
-mk_self  = terp.Self
-mk_int   = lambda s: terp.Constant(int(s))
+mk_nil    = lambda: terp.Constant(None)
+mk_false  = lambda: terp.Constant(False)
+mk_true   = lambda: terp.Constant(True)
+mk_self   = terp.Self
+mk_int    = lambda s: terp.Constant(int(s))
+mk_string = lambda s: terp.Constant(s)
 
 mk_var_ref = lambda s: terp.LocalGet(s) # XXX too specific
 mk_var_set = lambda s, expr: terp.LocalGet(s, expr) # XXX too specific
@@ -115,3 +116,8 @@ sg = Grammar(grammar)(**globals())
 
 ## sg.code('a b; c; d')
 #. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_LocalGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
+
+## sg.top("2")
+#. ((), _Constant(value=2))
+## sg.top("'hi'")
+#. ((), _Constant(value='hi'))
