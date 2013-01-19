@@ -28,7 +28,7 @@ stmt = bindable ':='_ expr :mk_var_set
      | '^'_ expr  # XXXsemantics
      | expr.
 
-expr = operand m1 (';'_ m1)*  :mk_cascade.
+expr = operand m1 :mk_send (';'_ m1 :mk_cascade)*.
 m1 = unary_selector m1? :mk_m1 | m2.
 e1 = operand (unary_selector :mk_e1)*.
 m2 = binary_selector e1 m2? :mk_m2 | m3.
@@ -84,20 +84,21 @@ mk_var_set = lambda s, expr: terp.LocalGet(s, expr) # XXX too specific
 
 mk_block = terp.BlockLiteral
 
-def mk_cascade(operand, m1, *ms):
-    assert not ms               # XXX
+def mk_cascade(operand, m1):
+    send = m1(operand)
+    return terp.Cascade(send.subject, send.selector, send.operands)
+
+def mk_send(operand, m1):
     return m1(operand)
 
-def mk_m1(selector, opt_m1=None):
-    assert opt_m1 is None       # XXX
-    return lambda operand: mk_e1(operand, selector)
+def mk_m1(selector, m1=lambda e: e):
+    return lambda operand: m1(mk_e1(operand, selector))
 
 def mk_e1(operand, selector):
     return terp.Send(operand, selector, ())
 
-def mk_m2(selector, e1, opt_m2=None):
-    assert opt_m2 is None       # XXX
-    return lambda operand: mk_e2(operand, selector, e1)
+def mk_m2(selector, e1, m2=lambda e: e):
+    return lambda operand: m2(mk_e2(operand, selector, e1))
 
 def mk_e2(operand, selector, arg):
     return terp.Send(operand, selector, (arg,))
@@ -108,5 +109,9 @@ def mk_m3(*args):
     return lambda operand: terp.Send(operand, selector, rands)
 
 sg = Grammar(grammar)(**globals())
+
 ## sg.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
+
+## sg.code('a b; c; d')
+#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_LocalGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
