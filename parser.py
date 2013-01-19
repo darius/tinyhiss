@@ -86,8 +86,6 @@ mk_block = terp.BlockLiteral
 
 def mk_cascade(operand, m1, *ms):
     assert not ms               # XXX
-    print operand
-    print m1
     return m1(operand)
 
 def mk_m1(selector, opt_m1=None):
@@ -115,7 +113,4 @@ def mk_m3(*args):
 
 sg = Grammar(grammar)(**globals())
 ## sg.code('2 + 3 negate')
-#. _Constant(value=2)
-#. <function <lambda> at 0xffe328b4>
-#. 
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
