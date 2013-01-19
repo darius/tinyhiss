@@ -30,9 +30,9 @@ stmt = bindable ':='_ expr :mk_var_set
 
 expr = operand m1 (';'_ m1)*  :mk_cascade.
 m1 = unary_selector m1? :mk_m1 | m2.
-e1 = operand unary_selector* :mk_e1.
+e1 = operand (unary_selector :mk_e1)*.
 m2 = binary_selector e1 m2? :mk_m2 | m3.
-e2 = e1 (binary_selector e1)* :mk_e2.
+e2 = e1 (binary_selector e1 :mk_e2)*.
 m3 = (keyword e2)+ :mk_m3.
 
 operand = block
@@ -90,21 +90,17 @@ def mk_cascade(operand, m1, *ms):
 
 def mk_m1(selector, opt_m1=None):
     assert opt_m1 is None       # XXX
-    return lambda operand: terp.Send(operand, selector, ())
+    return lambda operand: mk_e1(operand, selector)
 
-def mk_e1(operand, *selectors):
-    for selector in selectors:
-        operand = terp.Send(operand, selector, ())
-    return operand
+def mk_e1(operand, selector):
+    return terp.Send(operand, selector, ())
 
 def mk_m2(selector, e1, opt_m2=None):
     assert opt_m2 is None       # XXX
-    return lambda operand: terp.Send(operand, selector, (e1,))
+    return lambda operand: mk_e2(operand, selector, e1)
 
-def mk_e2(operand, *args):
-    for selector, arg in zip(selectors[::2], selectors[1::2]):
-        operand = terp.Send(operand, selector, (arg,))
-    return operand
+def mk_e2(operand, selector, arg):
+    return terp.Send(operand, selector, (arg,))
 
 def mk_m3(*args):
     selector = ''.join(args[::2])
