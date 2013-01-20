@@ -45,10 +45,10 @@ block_args = (':'_ bindable)* '|'_.
 
 literal = constant_ref
         | /self\b/_   :mk_self
-        | /super\b/_  # XXXsemantics
+        | /super\b/_  :mk_super
         | /-?(\d+)/_  :mk_int  # XXX add base-r literals, floats, and scaled decimals
         | string_literal :mk_string
-        | '#' nested_array.        # XXXsemantics
+        | '#' nested_array.
 
 constant_ref = /nil\b/_    :mk_nil
              | /false\b/_  :mk_false
@@ -57,7 +57,7 @@ constant_ref = /nil\b/_    :mk_nil
 string_literal = /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
-nested_array = '('_ array_element* ')'_.
+nested_array = '('_ array_element* ')'_ :mk_array.
 array_element = literal | nested_array.
 
 id = /([A-Za-z]\w*)/.
@@ -76,6 +76,7 @@ mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)
 mk_true   = lambda: terp.Constant(True)
 mk_self   = terp.Self
+mk_super  = lambda: XXX
 mk_int    = lambda s: terp.Constant(int(s))
 mk_string = lambda s: terp.Constant(s)
 
@@ -87,6 +88,7 @@ mk_block = terp.BlockLiteral
 mk_then = terp.Then
 
 mk_return = lambda e: XXX
+mk_array  = lambda *literals: XXX
 
 def mk_cascade(operand, m1):
     send = m1(operand)
