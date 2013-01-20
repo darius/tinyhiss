@@ -6,10 +6,10 @@ from parson import Grammar, hug, join
 import terp
 
 grammar = r"""
-top = _ code ~/./.
-other_top = method_decl ~/./.
+top_code = _ code ~/./.
+top_method = method_decl ~/./.
 
-method_decl = method_header code.
+method_decl = method_header code :mk_method.
 method_header = unary_selector :mk_unary_header
               | binary_selector bindable :mk_binary_header
               | (keyword bindable)+ :mk_keyword_header.
@@ -72,6 +72,9 @@ mk_unary_header   = lambda selector: (selector, ())
 mk_binary_header  = lambda selector, param: (selector, (param,))
 mk_keyword_header = lambda *args: (''.join(args[::2]), args[1::2])
 
+def mk_method((selector, params), localvars, expr):
+    return selector, terp.Method(params, localvars, expr)
+
 mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)
 mk_true   = lambda: terp.Constant(True)
@@ -122,32 +125,46 @@ sg = Grammar(grammar)(**globals())
 ## sg.code('a b; c; d')
 #. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_VarGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
 
-## sg.top("2")
+## sg.top_code("2")
 #. ((), _Constant(value=2))
-## sg.top("'hi'")
+## sg.top_code("'hi'")
 #. ((), _Constant(value='hi'))
 
 ## sg.method_decl('+ n\nmyValue + n')
-#. (('+', ('n',)), (), _Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),)))
+#. (('+', _Block(receiver=None, env=None, params=('n',), locals=(), expr=_Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),)))),)
 ## sg.method_decl('hurray  "comment" [42] if: true else: [137]')
-#. (('hurray', ()), (), _Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))
+#. (('hurray', _Block(receiver=None, env=None, params=(), locals=(), expr=_Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))),)
 ## sg.method_decl("at: x put: y   myTable at: '$'+x put: y")
-#. (('at:put:', ('x', 'y')), (), _Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y'))))
+#. (('at:put:', _Block(receiver=None, env=None, params=('x', 'y'), locals=(), expr=_Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y'))))),)
 
 ## sg.method_decl('foo |whee| whee := 42. whee')
-#. (('foo', ()), ('whee',), _Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))
+#. (('foo', _Block(receiver=None, env=None, params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))),)
 
+def ensure_class(name, classes):
+    if name not in classes:
+        classes[name] = terp.Class({}, ())
+    return classes[name]
 
-(selector, params), lvars, body = sg.method_decl("""factorial: n
+def add_method(classes, class_name, text):
+    (selector, method), = sg.top_method(text)
+    ensure_class(class_name, classes).put_method(selector, method)
+
+fact = """\
+factorial: n
+
 0 = n
     ifTrue: [1]
     ifFalse: [n * (self factorial: n-1)]
-""")
+"""
+add_method(terp.global_env, 'Factorial', fact)
 
-terp.global_env['Factorial'] = terp.Class({selector: terp.Method(params, lvars, body)}, ())
+empty_env = terp.Env({}, None)
 
-lvars, body = sg.top("Factorial new factorial: 5")
-factorial = terp.Block(None, terp.Env({}, None), (), lvars, body)
+def parse_code(classes, text):
+    localvars, body = sg.top_code(text)
+    return terp.Block(None, empty_env, (), localvars, body)
+
+factorial = parse_code(terp.global_env, "Factorial new factorial: 5")
 try_factorial = (5, (), terp.final_k), factorial
 ## terp.trampoline(*try_factorial)
 #. 120

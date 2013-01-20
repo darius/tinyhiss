@@ -38,6 +38,8 @@ class Class(object):
             return self.methods[selector]
         except KeyError:
             assert False, selector
+    def put_method(self, selector, method):
+        self.methods[selector] = method
     def make(self):
         return Thing(self, [None] * len(self.ivars))
 
@@ -108,7 +110,7 @@ class VarGet(namedtuple('_VarGet', 'name')):
             except KeyError:
                 try: return global_env[self.name], k
                 except KeyError:
-                    raise "Unbound variable", self.name
+                    raise Exception("Unbound variable", self.name)
 
 class VarPut(namedtuple('_VarPut', 'name expr')):
     def eval(self, receiver, env, k):
@@ -120,7 +122,7 @@ class VarPut(namedtuple('_VarPut', 'name expr')):
                         raise KeyError  # ugh
                     receiver.put(self.name, value)
                 except KeyError:
-                    raise "Unbound variable", self.name
+                    raise Exception("Unbound variable", self.name)
             return value, k
         return self.expr.eval(receiver, env, putting)
 
