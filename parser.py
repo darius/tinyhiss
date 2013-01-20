@@ -12,9 +12,9 @@ other_top = method_decl ~/./.
 method_decl = method_header code.
 method_header = unary_selector :mk_unary_header
               | binary_selector bindable :mk_binary_header
-              | (keyword id)+ :mk_keyword_header.
+              | (keyword bindable)+ :mk_keyword_header.
 
-unary_selector = id ~':'.
+unary_selector = id ~':' _.
 binary_selector = /([~!@%&*\-+=|\\<>,?\/]+)/_.
 keyword = id /(:)/_ :join.
 
@@ -65,8 +65,8 @@ array_element = literal | nested_array | constant_ref | symbol_in_array.
 
 symbol_in_array = ~constant_ref unary_selector | keyword | binary_selector.
 
-id = /([A-Za-z]\w*)/_.
-bindable = ~reserved id.
+id = /([A-Za-z]\w*)/.
+bindable = ~reserved id _.
 reserved = constant_ref | /self\b/_ | /super\b/_.
 
 _ = (/\s/ | comment)*.
