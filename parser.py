@@ -7,16 +7,16 @@ import terp
 
 grammar = r"""
 top = _ code ~/./.
-other_top = method_decl.
+other_top = method_decl ~/./.
 
 method_decl = method_header code.
-method_header = unary_selector
-              | binary_selector bindable
-              | (keyword id)+.
+method_header = unary_selector :mk_unary_header
+              | binary_selector bindable :mk_binary_header
+              | (keyword id)+ :mk_keyword_header.
 
 unary_selector = id ~':'.
 binary_selector = /([~!@%&*\-+=|\\<>,?\/]+)/_.
-keyword = id ':'_.
+keyword = id /(:)/_ :join.
 
 code = locals? :hug opt_stmts.
 opt_stmts = stmts | :mk_self.
@@ -73,6 +73,10 @@ _ = (/\s/ | comment)*.
 comment = /"[^"]*"/.
 """
 
+mk_unary_header   = lambda selector: (selector, ())
+mk_binary_header  = lambda selector, param: (selector, (param,))
+mk_keyword_header = lambda *args: (''.join(args[::2]), args[1::2])
+
 mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)
 mk_true   = lambda: terp.Constant(True)
@@ -121,3 +125,10 @@ sg = Grammar(grammar)(**globals())
 #. ((), _Constant(value=2))
 ## sg.top("'hi'")
 #. ((), _Constant(value='hi'))
+
+## sg.method_decl('+ n\nmyValue + n')
+#. (('+', ('n',)), (), _Send(subject=_LocalGet(name='myValue'), selector='+', operands=(_LocalGet(name='n'),)))
+## sg.method_decl('hurray  "comment" [42] if: true else: [137]')
+#. (('hurray', ()), (), _Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))
+## sg.method_decl("at: x put: y   myTable at: '$'+x put: y")
+#. (('at:put:', ('x', 'y')), (), _Send(subject=_LocalGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_LocalGet(name='x'),)), _LocalGet(name='y'))))
