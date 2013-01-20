@@ -101,7 +101,10 @@ class VarGet(namedtuple('_VarGet', 'name')):
     def eval(self, receiver, env, k):
         try: return env.get(self.name), k
         except KeyError:
-            try: return receiver.get(self.name), k
+            try:
+                if not isinstance(receiver, Thing):
+                    raise KeyError  # ugh
+                return receiver.get(self.name), k
             except KeyError:
                 try: return global_env[self.name], k
                 except KeyError:
@@ -112,7 +115,10 @@ class VarPut(namedtuple('_VarPut', 'name expr')):
         def putting(value):
             try: env.put(self.name, value)
             except KeyError:
-                try: receiver.put(self.name, value)
+                try:
+                    if not isinstance(receiver, Thing):
+                        raise KeyError  # ugh
+                    receiver.put(self.name, value)
                 except KeyError:
                     raise "Unbound variable", self.name
             return value, k

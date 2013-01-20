@@ -137,3 +137,17 @@ sg = Grammar(grammar)(**globals())
 ## sg.method_decl('foo |whee| whee := 42. whee')
 #. (('foo', ()), ('whee',), _Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))
 
+
+(selector, params), lvars, body = sg.method_decl("""factorial: n
+0 = n
+    ifTrue: [1]
+    ifFalse: [n * (self factorial: n-1)]
+""")
+
+terp.global_env['Factorial'] = terp.Class({selector: terp.Method(params, lvars, body)}, ())
+
+lvars, body = sg.top("Factorial new factorial: 5")
+factorial = terp.Block(None, terp.Env({}, None), (), lvars, body)
+try_factorial = (5, (), terp.final_k), factorial
+## terp.trampoline(*try_factorial)
+#. 120
