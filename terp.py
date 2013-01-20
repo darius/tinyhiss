@@ -85,7 +85,7 @@ def as_number(thing):
         return thing
     assert False, thing
 
-class Self(object):
+class Self(namedtuple('_Self', '')):
     def eval(self, receiver, env, k):
         return receiver, k
 
@@ -144,6 +144,13 @@ def evrands(operands, receiver, env, k):
         return operands[0].eval(receiver, env,
                                 lambda val: evrands(operands[1:], receiver, env,
                                                     lambda vals: ((val,)+vals, k)))
+
+
+class Then(namedtuple('_Then', 'expr1 expr2')):
+    def eval(self, receiver, env, k):
+        return self.expr1.eval(
+            receiver, env,
+            lambda _: self.expr2.eval(receiver, env, k))
 
 true_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
                                               Send(LocalGet('trueBlock'), 'run', ()))},

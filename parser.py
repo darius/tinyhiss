@@ -22,10 +22,10 @@ code = locals? :hug opt_stmts.
 opt_stmts = stmts | :mk_self.
 locals = '|'_ bindable* '|'_.
 
-stmts = stmt ('.'_ stmt)* ('.'_)?.  # XXXsemantics
+stmts = stmt ('.'_ stmt :mk_then)* ('.'_)?.
 
 stmt = bindable ':='_ expr :mk_var_set
-     | '^'_ expr  # XXXsemantics
+     | '^'_ expr :mk_return
      | expr.
 
 expr = operand (m1 :mk_send (';'_ m1 :mk_cascade)*)?.
@@ -84,10 +84,14 @@ mk_self   = terp.Self
 mk_int    = lambda s: terp.Constant(int(s))
 mk_string = lambda s: terp.Constant(s)
 
-mk_var_ref = lambda s: terp.LocalGet(s) # XXX too specific
-mk_var_set = lambda s, expr: terp.LocalGet(s, expr) # XXX too specific
+mk_var_ref = terp.LocalGet # XXX too specific
+mk_var_set = terp.LocalPut # XXX too specific
 
 mk_block = terp.BlockLiteral
+
+mk_then = terp.Then
+
+mk_return = lambda e: XXX
 
 def mk_cascade(operand, m1):
     send = m1(operand)
@@ -132,3 +136,7 @@ sg = Grammar(grammar)(**globals())
 #. (('hurray', ()), (), _Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))
 ## sg.method_decl("at: x put: y   myTable at: '$'+x put: y")
 #. (('at:put:', ('x', 'y')), (), _Send(subject=_LocalGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_LocalGet(name='x'),)), _LocalGet(name='y'))))
+
+## sg.method_decl('foo |whee| whee := 42. whee')
+#. (('foo', ()), ('whee',), _Then(expr1=_LocalPut(name='whee', expr=_Constant(value=42)), expr2=_LocalGet(name='whee')))
+
