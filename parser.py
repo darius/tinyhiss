@@ -47,11 +47,8 @@ literal = constant_ref
         | /self\b/_   :mk_self
         | /super\b/_  # XXXsemantics
         | /-?(\d+)/_  :mk_int  # XXX add base-r literals, floats, and scaled decimals
-        | '$' /(.)/_  # XXXsemantics  # char literal
         | string_literal :mk_string
-        | '#['_ (/(\d+)/_)* ']'_  # XXXsemantics
-        | '#' nested_array        # XXXsemantics
-        | '#'_ (symbol_in_array | constant_ref | string_literal). # XXXsemantics
+        | '#' nested_array.        # XXXsemantics
 
 constant_ref = /nil\b/_    :mk_nil
              | /false\b/_  :mk_false
@@ -61,9 +58,7 @@ string_literal = /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
 nested_array = '('_ array_element* ')'_.
-array_element = literal | nested_array | constant_ref | symbol_in_array.
-
-symbol_in_array = ~constant_ref unary_selector | keyword | binary_selector.
+array_element = literal | nested_array.
 
 id = /([A-Za-z]\w*)/.
 bindable = ~reserved id _.
