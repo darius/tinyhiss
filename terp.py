@@ -63,7 +63,7 @@ class Env(namedtuple('_Env', 'rib container')):
         elif self.container is not None:
             return self.container.find(key)
         else:
-            raise Exception("Unbound variable", key)
+            raise KeyError(key)
 
 def new_method((receiver, arguments, k)):
     return receiver.make(), k
@@ -97,27 +97,28 @@ class BlockLiteral(namedtuple('_BlockLiteral', 'params locals expr')):
     def eval(self, receiver, env, k):
         return Block(receiver, env, self.params, self.locals, self.expr), k
 
-class LocalGet(namedtuple('_LocalGet', 'name')):
+class VarGet(namedtuple('_VarGet', 'name')):
     def eval(self, receiver, env, k):
-        return env.get(self.name), k
+        try: return env.get(self.name), k
+        except KeyError:
+            try: return receiver.get(self.name), k
+            except KeyError:
+                try: return global_env[self.name], k
+                except KeyError:
+                    raise "Unbound variable", self.name
 
-class LocalPut(namedtuple('_LocalPut', 'name expr')):
+class VarPut(namedtuple('_VarPut', 'name expr')):
     def eval(self, receiver, env, k):
         def putting(value):
-            env.put(self.name, value)
+            try: env.put(self.name, value)
+            except KeyError:
+                try: receiver.put(self.name, value)
+                except KeyError:
+                    raise "Unbound variable", self.name
             return value, k
         return self.expr.eval(receiver, env, putting)
 
-class InstanceGet(namedtuple('_InstanceGet', 'name')):
-    def eval(self, receiver, env, k):
-        return receiver.get(self.name), k
-
-class InstancePut(namedtuple('_InstancePut', 'name expr')):
-    def eval(self, receiver, env, k):
-        def putting(value):
-            receiver.put(self.name, value)
-            return value, k
-        return self.expr.eval(receiver, env, putting)
+global_env = {}
 
 class Cascade(namedtuple('_Cascade', 'subject selector operands')):
     def eval(self, receiver, env, k):
@@ -153,10 +154,10 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
             lambda _: self.expr2.eval(receiver, env, k))
 
 true_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
-                                              Send(LocalGet('trueBlock'), 'run', ()))},
+                                              Send(VarGet('trueBlock'), 'run', ()))},
                    ())
 false_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
-                                               Send(LocalGet('falseBlock'), 'run', ()))},
+                                               Send(VarGet('falseBlock'), 'run', ()))},
                     ())
 
 final_k = lambda result: (result, None)
@@ -176,9 +177,9 @@ def make(class_, k):
 
 object_init = Method((), (), Self())
 
-eg_init_with = Method(('value',), (), InstancePut('whee', LocalGet('value')))
-eg_get_whee = Method((), (), InstanceGet('whee'))
-eg_yay_body = Send(Send(Self(), 'get_whee', ()), '+', (LocalGet('x'),))
+eg_init_with = Method(('value',), (), VarPut('whee', VarGet('value')))
+eg_get_whee = Method((), (), VarGet('whee'))
+eg_yay_body = Send(Send(Self(), 'get_whee', ()), '+', (VarGet('x'),))
 eg_yay = Method(('x',), ('v',), eg_yay_body)
 eg_class = Class(dict(yay=eg_yay,
                       get_whee=eg_get_whee,
@@ -201,14 +202,14 @@ make_eg_result = (None, (), final_k), make_eg
 #. 179
 
 # TODO: make this a method on Number
-factorial_body = Send(Send(LocalGet('n'), '=', (Constant(0),)),
+factorial_body = Send(Send(VarGet('n'), '=', (Constant(0),)),
                       'ifTrue:ifFalse:',
                       (BlockLiteral((), (), Constant(1)),
                        BlockLiteral((), (),
                                     # n * (self factorial: (n - 1))
-                                    Send(LocalGet('n'), '*',
+                                    Send(VarGet('n'), '*',
                                          (Send(Self(), 'factorial:',
-                                               (Send(LocalGet('n'), '-', (Constant(1),)),)),)))))
+                                               (Send(VarGet('n'), '-', (Constant(1),)),)),)))))
 factorial_class = Class({'factorial:': Method(('n',), (), factorial_body)},
                         ())
 factorial = Block(None, None, (), (),

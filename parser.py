@@ -24,7 +24,7 @@ locals = '|'_ bindable* '|'_.
 
 stmts = stmt ('.'_ stmt :mk_then)* ('.'_)?.
 
-stmt = bindable ':='_ expr :mk_var_set
+stmt = bindable ':='_ expr :mk_var_put
      | '^'_ expr :mk_return
      | expr.
 
@@ -37,7 +37,7 @@ m3 = (keyword e2)+ :mk_m3.
 
 operand = block
         | literal
-        | bindable :mk_var_ref
+        | bindable :mk_var_get
         | '('_ stmt ')'_.
 
 block = '['_ block_args? :hug code ']'_ :mk_block.
@@ -80,8 +80,8 @@ mk_super  = lambda: XXX
 mk_int    = lambda s: terp.Constant(int(s))
 mk_string = lambda s: terp.Constant(s)
 
-mk_var_ref = terp.LocalGet # XXX too specific
-mk_var_set = terp.LocalPut # XXX too specific
+mk_var_get = terp.VarGet
+mk_var_put = terp.VarPut
 
 mk_block = terp.BlockLiteral
 
@@ -120,7 +120,7 @@ sg = Grammar(grammar)(**globals())
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
 
 ## sg.code('a b; c; d')
-#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_LocalGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
+#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_VarGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
 
 ## sg.top("2")
 #. ((), _Constant(value=2))
@@ -128,12 +128,12 @@ sg = Grammar(grammar)(**globals())
 #. ((), _Constant(value='hi'))
 
 ## sg.method_decl('+ n\nmyValue + n')
-#. (('+', ('n',)), (), _Send(subject=_LocalGet(name='myValue'), selector='+', operands=(_LocalGet(name='n'),)))
+#. (('+', ('n',)), (), _Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),)))
 ## sg.method_decl('hurray  "comment" [42] if: true else: [137]')
 #. (('hurray', ()), (), _Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))
 ## sg.method_decl("at: x put: y   myTable at: '$'+x put: y")
-#. (('at:put:', ('x', 'y')), (), _Send(subject=_LocalGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_LocalGet(name='x'),)), _LocalGet(name='y'))))
+#. (('at:put:', ('x', 'y')), (), _Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y'))))
 
 ## sg.method_decl('foo |whee| whee := 42. whee')
-#. (('foo', ()), ('whee',), _Then(expr1=_LocalPut(name='whee', expr=_Constant(value=42)), expr2=_LocalGet(name='whee')))
+#. (('foo', ()), ('whee',), _Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))
 
