@@ -5,7 +5,7 @@ Based on http://chronos-st.blogspot.com/2007/12/smalltalk-in-one-page.html
 from parson import Grammar, hug, join
 import terp
 
-grammar = r"""
+grammar_text = r"""
 top_code = _ code ~/./.
 top_method = method_decl ~/./.
 
@@ -117,27 +117,27 @@ def mk_m3(*args):
     rands = args[1::2]
     return lambda operand: terp.Send(operand, selector, rands)
 
-sg = Grammar(grammar)(**globals())
+grammar = Grammar(grammar_text)(**globals())
 
-## sg.code('2 + 3 negate')
+## grammar.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
 
-## sg.code('a b; c; d')
+## grammar.code('a b; c; d')
 #. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_VarGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
 
-## sg.top_code("2")
+## grammar.top_code("2")
 #. ((), _Constant(value=2))
-## sg.top_code("'hi'")
+## grammar.top_code("'hi'")
 #. ((), _Constant(value='hi'))
 
-## sg.method_decl('+ n\nmyValue + n')
+## grammar.method_decl('+ n\nmyValue + n')
 #. (('+', _Block(receiver=None, env=None, params=('n',), locals=(), expr=_Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),)))),)
-## sg.method_decl('hurray  "comment" [42] if: true else: [137]')
+## grammar.method_decl('hurray  "comment" [42] if: true else: [137]')
 #. (('hurray', _Block(receiver=None, env=None, params=(), locals=(), expr=_Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))),)
-## sg.method_decl("at: x put: y   myTable at: '$'+x put: y")
+## grammar.method_decl("at: x put: y   myTable at: '$'+x put: y")
 #. (('at:put:', _Block(receiver=None, env=None, params=('x', 'y'), locals=(), expr=_Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y'))))),)
 
-## sg.method_decl('foo |whee| whee := 42. whee')
+## grammar.method_decl('foo |whee| whee := 42. whee')
 #. (('foo', _Block(receiver=None, env=None, params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))),)
 
 def ensure_class(name, classes):
@@ -146,8 +146,14 @@ def ensure_class(name, classes):
     return classes[name]
 
 def add_method(class_name, text, classes):
-    (selector, method), = sg.top_method(text)
+    (selector, method), = grammar.top_method(text)
     ensure_class(class_name, classes).put_method(selector, method)
+
+empty_env = terp.Env({}, None)
+
+def parse_code(text, classes):
+    localvars, body = grammar.top_code(text)
+    return terp.Block(None, empty_env, (), localvars, body)
 
 fact = """\
 factorial: n
@@ -157,12 +163,6 @@ factorial: n
     ifFalse: [n * (self factorial: n-1)]
 """
 add_method('Factorial', fact, terp.global_env)
-
-empty_env = terp.Env({}, None)
-
-def parse_code(text, classes):
-    localvars, body = sg.top_code(text)
-    return terp.Block(None, empty_env, (), localvars, body)
 
 factorial = parse_code("Factorial new factorial: 5", terp.global_env)
 try_factorial = (5, (), terp.final_k), factorial
