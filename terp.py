@@ -168,6 +168,13 @@ false_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
                                                Send(VarGet('falseBlock'), 'run', ()))},
                     ())
 
+#global_env['Object'] = thing_class
+global_env['Class']  = class_class
+global_env['Block']  = block_class
+global_env['Number'] = num_class
+global_env['False']  = false_class
+global_env['True']   = true_class
+
 final_k = lambda result: (result, None)
 
 
