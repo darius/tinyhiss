@@ -145,7 +145,7 @@ def ensure_class(name, classes):
         classes[name] = terp.Class({}, ())
     return classes[name]
 
-def add_method(classes, class_name, text):
+def add_method(class_name, text, classes):
     (selector, method), = sg.top_method(text)
     ensure_class(class_name, classes).put_method(selector, method)
 
@@ -156,15 +156,15 @@ factorial: n
     ifTrue: [1]
     ifFalse: [n * (self factorial: n-1)]
 """
-add_method(terp.global_env, 'Factorial', fact)
+add_method('Factorial', fact, terp.global_env)
 
 empty_env = terp.Env({}, None)
 
-def parse_code(classes, text):
+def parse_code(text, classes):
     localvars, body = sg.top_code(text)
     return terp.Block(None, empty_env, (), localvars, body)
 
-factorial = parse_code(terp.global_env, "Factorial new factorial: 5")
+factorial = parse_code("Factorial new factorial: 5", terp.global_env)
 try_factorial = (5, (), terp.final_k), factorial
 ## terp.trampoline(*try_factorial)
 #. 120
