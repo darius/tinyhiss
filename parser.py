@@ -128,11 +128,11 @@ def add_method(class_name, text, classes):
     (selector, method), = grammar.top_method(text)
     ensure_class(class_name, classes).put_method(selector, method)
 
-empty_env = terp.Env({}, None)
-
 def parse_code(text, classes):
     localvars, body = grammar.top_code(text)
     return terp.Block(None, empty_env, (), localvars, body)
+
+empty_env = terp.Env({}, None)
 
 ## grammar.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
