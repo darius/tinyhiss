@@ -165,6 +165,19 @@ factorial: n
 ## add_method('Factorial', fact, terp.global_env)
 
 ## factorial = parse_code("Factorial new factorial: 5", terp.global_env)
-## try_factorial = (5, (), terp.final_k), factorial
+## try_factorial = (None, (), terp.final_k), factorial
+## terp.trampoline(*try_factorial)
+#. 120
+
+fact2 = """\
+factorial
+
+0 = self
+    ifTrue: [1]
+    ifFalse: [self * (self-1) factorial]
+"""
+## add_method('Number', fact2, terp.global_env)
+## factorial = parse_code("5 factorial", terp.global_env)
+## try_factorial = (None, (), terp.final_k), factorial
 ## terp.trampoline(*try_factorial)
 #. 120
