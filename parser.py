@@ -166,7 +166,6 @@ factorial: n
     ifFalse: [n * (self factorial: n-1)]
 """
 ## add_method('Factorial', fact, terp.global_env)
-
 ## run("Factorial new factorial: 5", terp.global_env)
 #. 120
 
