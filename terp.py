@@ -45,15 +45,15 @@ class Class(object):
         return Thing(self, [None] * len(self.ivars))
 
 def Method(params, local_vars, expr):
-    return Block(None, None, params, local_vars, expr)
+    return Block(None, None, Code(params, local_vars, expr))
 
-class Block(namedtuple('_Block', 'receiver env params locals expr')):
+class Block(namedtuple('_Block', 'receiver env code')):
     def __call__(self, (receiver, arguments, k)):
-        rib = dict(zip(self.params, arguments))
-        for var in self.locals:
+        rib = dict(zip(self.code.params, arguments))
+        for var in self.code.locals:
             rib[var] = None
         real_receiver = self.receiver or receiver
-        return self.expr.eval(real_receiver, Env(rib, self.env), k)
+        return self.code.expr.eval(real_receiver, Env(rib, self.env), k)
 
 class Env(namedtuple('_Env', 'rib container')):
     def get(self, key):
@@ -96,9 +96,9 @@ class Constant(namedtuple('_Constant', 'value')):
     def eval(self, receiver, env, k):
         return self.value, k
 
-class BlockLiteral(namedtuple('_BlockLiteral', 'params locals expr')):
+class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, receiver, env, k):
-        return Block(receiver, env, self.params, self.locals, self.expr), k
+        return Block(receiver, env, self), k
 
 class VarGet(namedtuple('_VarGet', 'name')):
     def eval(self, receiver, env, k):
@@ -209,10 +209,10 @@ eg_result = call(eg, 'yay', (137,), final_k)
 ## trampoline(*eg_result)
 #. 179
 
-make_eg = Block(None, None, (), (),
-                Send(Cascade(Send(Constant(eg_class), 'new', ()),
-                             'init_with', (Constant(42),)),
-                     'yay', (Constant(137),)))
+make_eg = Method((), (),
+                 Send(Cascade(Send(Constant(eg_class), 'new', ()),
+                              'init_with', (Constant(42),)),
+                      'yay', (Constant(137),)))
 make_eg_result = (None, (), final_k), make_eg
 ## trampoline(*make_eg_result)
 #. 179
@@ -220,18 +220,18 @@ make_eg_result = (None, (), final_k), make_eg
 # TODO: make this a method on Number
 factorial_body = Send(Send(VarGet('n'), '=', (Constant(0),)),
                       'ifTrue:ifFalse:',
-                      (BlockLiteral((), (), Constant(1)),
-                       BlockLiteral((), (),
-                                    # n * (self factorial: (n - 1))
-                                    Send(VarGet('n'), '*',
-                                         (Send(Self(), 'factorial:',
-                                               (Send(VarGet('n'), '-', (Constant(1),)),)),)))))
+                      (Code((), (), Constant(1)),
+                       Code((), (),
+                            # n * (self factorial: (n - 1))
+                            Send(VarGet('n'), '*',
+                                 (Send(Self(), 'factorial:',
+                                       (Send(VarGet('n'), '-', (Constant(1),)),)),)))))
 factorial_class = Class({'factorial:': Method(('n',), (), factorial_body)},
                         ())
-factorial = Block(None, None, (), (),
-                  Send(Send(Constant(factorial_class), 'new', ()),
-                       'factorial:',
-                       (Constant(5),)))
+factorial = Method((), (),
+                   Send(Send(Constant(factorial_class), 'new', ()),
+                        'factorial:',
+                        (Constant(5),)))
 try_factorial = (None, (), final_k), factorial
 ## trampoline(*try_factorial)
 #. 120

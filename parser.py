@@ -86,7 +86,7 @@ mk_string = lambda s: terp.Constant(s)
 mk_var_get = terp.VarGet
 mk_var_put = terp.VarPut
 
-mk_block = terp.BlockLiteral
+mk_block = terp.Code
 
 mk_then = terp.Then
 
@@ -130,9 +130,7 @@ def add_method(class_name, text, classes):
 
 def parse_code(text, classes):
     localvars, body = grammar.top_code(text)
-    return terp.Block(None, empty_env, (), localvars, body)
-
-empty_env = terp.Env({}, None)
+    return terp.Block(None, None, terp.Code((), localvars, body))
 
 ## grammar.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
@@ -146,14 +144,14 @@ empty_env = terp.Env({}, None)
 #. ((), _Constant(value='hi'))
 
 ## grammar.method_decl('+ n\nmyValue + n')
-#. (('+', _Block(receiver=None, env=None, params=('n',), locals=(), expr=_Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),)))),)
+#. (('+', _Block(receiver=None, env=None, code=_Code(params=('n',), locals=(), expr=_Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),))))),)
 ## grammar.method_decl('hurray  "comment" [42] if: true else: [137]')
-#. (('hurray', _Block(receiver=None, env=None, params=(), locals=(), expr=_Send(subject=_BlockLiteral(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _BlockLiteral(params=(), locals=(), expr=_Constant(value=137)))))),)
+#. (('hurray', _Block(receiver=None, env=None, code=_Code(params=(), locals=(), expr=_Send(subject=_Code(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _Code(params=(), locals=(), expr=_Constant(value=137))))))),)
 ## grammar.method_decl("at: x put: y   myTable at: '$'+x put: y")
-#. (('at:put:', _Block(receiver=None, env=None, params=('x', 'y'), locals=(), expr=_Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y'))))),)
+#. (('at:put:', _Block(receiver=None, env=None, code=_Code(params=('x', 'y'), locals=(), expr=_Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y')))))),)
 
 ## grammar.method_decl('foo |whee| whee := 42. whee')
-#. (('foo', _Block(receiver=None, env=None, params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee')))),)
+#. (('foo', _Block(receiver=None, env=None, code=_Code(params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee'))))),)
 
 fact = """\
 factorial: n
