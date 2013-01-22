@@ -132,6 +132,11 @@ def parse_code(text, classes):
     localvars, body = grammar.top_code(text)
     return terp.Block(None, None, terp.Code((), localvars, body))
 
+def run(text, classes):
+    block = parse_code(text, classes)
+    call_it = (None, (), terp.final_k), block
+    return terp.trampoline(*call_it)
+
 ## grammar.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
 
@@ -162,9 +167,7 @@ factorial: n
 """
 ## add_method('Factorial', fact, terp.global_env)
 
-## factorial = parse_code("Factorial new factorial: 5", terp.global_env)
-## try_factorial = (None, (), terp.final_k), factorial
-## terp.trampoline(*try_factorial)
+## run("Factorial new factorial: 5", terp.global_env)
 #. 120
 
 fact2 = """\
@@ -175,12 +178,8 @@ factorial
     ifFalse: [self * (self-1) factorial]
 """
 ## add_method('Number', fact2, terp.global_env)
-## factorial = parse_code("5 factorial", terp.global_env)
-## try_factorial = (None, (), terp.final_k), factorial
-## terp.trampoline(*try_factorial)
+## run("5 factorial", terp.global_env)
 #. 120
 
-## foo = parse_code("3 + 4 * 5", terp.global_env)
-## try_foo = (None, (), terp.final_k), foo
-## terp.trampoline(*try_foo)
+## run("3 + 4 * 5", terp.global_env)
 #. 35
