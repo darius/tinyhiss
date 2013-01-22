@@ -181,3 +181,8 @@ factorial
 ## try_factorial = (None, (), terp.final_k), factorial
 ## terp.trampoline(*try_factorial)
 #. 120
+
+## foo = parse_code("3 + 4 * 5", terp.global_env)
+## try_foo = (None, (), terp.final_k), foo
+## terp.trampoline(*try_foo)
+#. 35

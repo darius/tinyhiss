@@ -20,6 +20,7 @@ def get_class(x):
     elif isinstance(x, (str, unicode)):  return string_class
     elif isinstance(x, Block):           return block_class
     elif isinstance(x, Class):           return class_class
+    elif callable(x):                    return primitive_method_class
     else:                                return x.class_
 
 class Thing(namedtuple('_Thing', 'class_ data')):
@@ -72,7 +73,7 @@ def new_method((receiver, arguments, k)):
 
 class_class = Class(dict(new=new_method), ())
 
-block_class = Class(dict(run=lambda (receiver, arguments, k): receiver((None, (), k))),
+block_class = Class(dict(value=lambda (receiver, arguments, k): receiver((None, (), k))),
                     ())
 
 num_methods = {'+': lambda (rcvr, (other,), k): (rcvr + as_number(other), k),
@@ -162,10 +163,10 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
             lambda _: self.expr2.eval(receiver, env, k))
 
 true_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
-                                              Send(VarGet('trueBlock'), 'run', ()))},
+                                              Send(VarGet('trueBlock'), 'value', ()))},
                    ())
 false_class = Class({'ifTrue:ifFalse:': Method(('trueBlock', 'falseBlock'), (),
-                                               Send(VarGet('falseBlock'), 'run', ()))},
+                                               Send(VarGet('falseBlock'), 'value', ()))},
                     ())
 
 #global_env['Object'] = thing_class
