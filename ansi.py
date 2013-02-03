@@ -20,7 +20,7 @@ show_cursor = prefix + '?25h'
 hide_cursor = prefix + '?25l'
 
 def goto(x, y):
-    return prefix + ('%d;%dH' % (y, x))
+    return prefix + ('%d;%dH' % (y+1, x+1))
 
 black, red, green, yellow, blue, magenta, cyan, white = range(8)
 

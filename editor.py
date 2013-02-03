@@ -38,9 +38,9 @@ def redisplay(new_origin, write):
             x += 1
             if x == cols:
                 x, y = 0, y+1
-                write('\r\n')
+                write(ansi.goto(x, y))
         p += 1
-    write(ansi.goto(0, 30))
+    write(ansi.goto(0, rows+1))
     write(' '.join(map(str, seen)))
     if found_point:
         write(ansi.show_cursor + ansi.restore_cursor_pos)
