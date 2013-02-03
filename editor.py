@@ -53,7 +53,7 @@ def move_char(d):
 def move_line(d):
     p = start_of_line(buf.point)
     if buf.column is None:
-        buf.column = buf.point - p
+        buf.column = find_column(p, buf.point)
     if d < 0:
         for _ in range(d, 0):
             p = start_of_line(p - 1) # XXX ok?
@@ -71,6 +71,19 @@ def start_of_line(p):
 def end_of_line(p):
     eol = buf.text.find('\n', p)
     return eol if eol != -1 else len(buf.text)
+
+def find_column(bol, p):
+    # XXX code duplication wrt redisplay()
+    # XXX doesn't handle escaped chars
+    # A simpler solution: require tab on input to expand into spaces
+    # in the text, immediately. Um, but that doesn't do escapes either.
+    column = 0
+    for c in buf.text[bol:p]:
+        if c == '\t':
+            column = (column + 7) // 8 * 8
+        else:
+            column += 1
+    return column
 
 def insert(s):
     buf.text = buf.text[:buf.point] + s + buf.text[buf.point:]
