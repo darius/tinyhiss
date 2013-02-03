@@ -25,9 +25,9 @@ class Buffer:
                 p = self.start_of_line(p - 1)
         else:
             for _ in range(d):
-                nl = self.text.find('\n', p) + 1
-                if nl == 0: break
-                p = nl
+                nl = self.end_of_line(p)
+                if nl == len(self.text): break
+                p = nl + 1
         eol = self.text.find('\n', p)
         self.point = min(p + self.column, (eol if eol != -1 else len(self.text)))
 
