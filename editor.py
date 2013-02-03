@@ -8,28 +8,30 @@ import ansi
 filename = sys.argv[1]
 cols, rows = 80, 24             # XXX query window size somehow
 
+class Buffer: pass
+buf = Buffer()
+buf.point, buf.origin = 0, 0
+buf.column = None
 try:            f = open(filename)
-except IOError: text = ''
-else:           text = f.read(); f.close()
+except IOError: buf.text = ''
+else:           buf.text = f.read(); f.close()
 
 def C(ch): return chr(ord(ch.upper()) - 64)
 
 seen = []
-
-point, origin = 0, 0
 
 def redisplay(new_origin, write):
     write(ansi.hide_cursor + ansi.home)
     p, x, y = new_origin, 0, 0
     found_point = False
     while y < rows:
-        if p == point:
+        if p == buf.point:
             write(ansi.save_cursor_pos)
             found_point = True
-        if p == len(text):
+        if p == len(buf.text):
             write(ansi.clear_to_bottom)
             break
-        ch = text[p]
+        ch = buf.text[p]
         if ch == '\n':
             write(ansi.clear_to_eol + '\r\n')
             x, y = 0, y+1
@@ -52,38 +54,33 @@ def redisplay(new_origin, write):
     return found_point
 
 def move_char(d):
-    global point
-    point = max(0, min(point + d, len(text)))
-
-column = None
+    buf.point = max(0, min(buf.point + d, len(buf.text)))
 
 def move_line(d):
-    global point, column
-    p = start_of_line(point)
-    if column is None:
-        column = point - p
+    p = start_of_line(buf.point)
+    if buf.column is None:
+        buf.column = buf.point - p
     if d < 0:
         for _ in range(d, 0):
             p = start_of_line(p - 1) # XXX ok?
     else:
         for _ in range(d):
-            nl = text.find('\n', p) + 1
+            nl = buf.text.find('\n', p) + 1
             if nl == 0: break
             p = nl
-    eol = text.find('\n', p)
-    point = min(p + column, (eol if eol != -1 else len(text)))
+    eol = buf.text.find('\n', p)
+    buf.point = min(p + buf.column, (eol if eol != -1 else len(buf.text)))
 
 def start_of_line(p):
-    return text.rfind('\n', 0, p) + 1
+    return buf.text.rfind('\n', 0, p) + 1
 
 def end_of_line(p):
-    eol = text.find('\n', p)
-    return eol if eol != -1 else len(text)
+    eol = buf.text.find('\n', p)
+    return eol if eol != -1 else len(buf.text)
 
 def insert(s):
-    global text, point
-    text = text[:point] + s + text[point:]
-    point += len(s)
+    buf.text = buf.text[:buf.point] + s + buf.text[buf.point:]
+    buf.point += len(s)
 
 keybindings = {}
 
@@ -95,10 +92,9 @@ def bind(ch): return lambda fn: set_key(ch, fn)
 
 @bind(chr(127))
 def backward_delete_char():
-    global text, point
-    if 0 == point: return
-    text = text[:point-1] + text[point:]
-    point -= 1
+    if 0 == buf.point: return
+    buf.text = buf.text[:buf.point-1] + buf.text[buf.point:]
+    buf.point -= 1
 
 @bind(C('b'))
 @bind('left')
@@ -117,24 +113,23 @@ def backward_move_line(): move_line(-1)
 @bind(C('j'))
 def smalltalk_print_it():
     import parser, terp
-    bol, eol = start_of_line(point), end_of_line(point)
-    line = text[bol:eol]
+    bol, eol = start_of_line(buf.point), end_of_line(buf.point)
+    line = buf.text[bol:eol]
     try:
         result = parser.run(line, terp.global_env)
     except Exception, e:
         result = e
-    old_result = text.find(' "=> ', bol, eol)
+    old_result = buf.text.find(' "=> ', bol, eol)
     if old_result == -1: old_result = eol
     # XXX acting on hacky error-prone matching
     replace(old_result, eol, ' "=> %r"' % result)
 
 def replace(start, end, string):
-    global text, point
-    text = text[:start] + string + text[end:]
-    if start <= point < end:
-        point = min(point, start + len(string))
-    elif end <= point:
-        point = start + len(string) + (point - end)
+    buf.text = buf.text[:start] + string + buf.text[end:]
+    if start <= buf.point < end:
+        buf.point = min(buf.point, start + len(string))
+    elif end <= buf.point:
+        buf.point = start + len(string) + (buf.point - end)
 
 def really_read_key():
     ch = sys.stdin.read(1)
@@ -158,18 +153,17 @@ def read_key():
     return ch
 
 def main():
-    global column, origin
     os.system('stty raw -echo')
     try:
 
         sys.stdout.write(ansi.clear_screen)
         while True:
 
-            if not redisplay(origin, lambda s: None):
-                for origin in range(max(0, point - cols * rows), point+1):
-                    if redisplay(origin, lambda s: None):
+            if not redisplay(buf.origin, lambda s: None):
+                for buf.origin in range(max(0, buf.point - cols * rows), buf.point+1):
+                    if redisplay(buf.origin, lambda s: None):
                         break
-            redisplay(origin, sys.stdout.write)
+            redisplay(buf.origin, sys.stdout.write)
 
             ch = read_key()
             if ch in ('', C('x'), C('q')):
@@ -180,10 +174,10 @@ def main():
                 insert('\n' if ch == '\r' else ch)
 
             if ch not in ('up', 'down'):
-                column = None
+                buf.column = None
 
         if ch != C('q'):
-            open(filename, 'w').write(text)
+            open(filename, 'w').write(buf.text)
 
     finally:
         os.system('stty sane')
