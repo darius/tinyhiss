@@ -10,7 +10,13 @@ cols, rows = 80, 24             # XXX query window size somehow
 pane_left, pane_top = 2, 1
 pane_right, pane_bottom = pane_left + cols, pane_top + rows
 
-class Buffer:
+class Buffer(object):
+
+    def __init__(self):
+        self.point = 0
+        self.origin = 0
+        self.column = None
+        self.text = ''
 
     def move_char(self, d):
         self.point = max(0, min(self.point + d, len(self.text)))
@@ -29,6 +35,7 @@ class Buffer:
                 if nl == len(self.text): break
                 p = nl + 1
         eol = self.text.find('\n', p)
+        # XXX step forward until current column == column -- could be different
         self.point = min(p + self.column, (eol if eol != -1 else len(self.text)))
 
     def start_of_line(self, p):
@@ -62,12 +69,14 @@ class Buffer:
         elif end <= buf.point:
             buf.point = start + len(string) + (buf.point - end)
 
+def load(filename):
+    try:            f = open(filename)
+    except IOError: result = ''
+    else:           result = f.read(); f.close()
+    return result
+
 thebuf = Buffer()
-thebuf.point, thebuf.origin = 0, 0
-thebuf.column = None
-try:            f = open(filename)
-except IOError: thebuf.text = ''
-else:           thebuf.text = f.read(); f.close()
+thebuf.text = load(filename)
 
 def C(ch): return chr(ord(ch.upper()) - 64)
 
