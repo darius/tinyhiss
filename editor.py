@@ -10,19 +10,70 @@ cols, rows = 80, 24             # XXX query window size somehow
 pane_left, pane_top = 2, 1
 pane_right, pane_bottom = pane_left + cols, pane_top + rows
 
-class Buffer: pass
-buf = Buffer()
-buf.point, buf.origin = 0, 0
-buf.column = None
+class Buffer:
+
+    def move_char(self, d):
+        self.point = max(0, min(self.point + d, len(self.text)))
+
+    def move_line(self, d):
+        p = self.start_of_line(self.point)
+        if self.column is None:
+            self.column = self.find_column(p, self.point)
+        if d < 0:
+            for _ in range(d, 0):
+                if p == 0: break
+                p = self.start_of_line(p - 1)
+        else:
+            for _ in range(d):
+                nl = self.text.find('\n', p) + 1
+                if nl == 0: break
+                p = nl
+        eol = self.text.find('\n', p)
+        self.point = min(p + self.column, (eol if eol != -1 else len(self.text)))
+
+    def start_of_line(self, p):
+        return self.text.rfind('\n', 0, p) + 1
+
+    def end_of_line(self, p):
+        eol = self.text.find('\n', p)
+        return eol if eol != -1 else len(self.text)
+
+    def find_column(self, bol, p):
+        # XXX code duplication wrt redisplay()
+        # XXX doesn't handle escaped chars
+        # A simpler solution: require tab on input to expand into spaces
+        # in the text, immediately. Um, but that doesn't do escapes either.
+        column = 0
+        for c in self.text[bol:p]:
+            if c == '\t':
+                column = (column + 7) // 8 * 8
+            else:
+                column += 1
+        return column
+
+    def insert(self, s):
+        self.text = self.text[:self.point] + s + self.text[self.point:]
+        self.point += len(s)
+
+    def replace(buf, start, end, string):
+        buf.text = buf.text[:start] + string + buf.text[end:]
+        if start <= buf.point < end:
+            buf.point = min(buf.point, start + len(string))
+        elif end <= buf.point:
+            buf.point = start + len(string) + (buf.point - end)
+
+thebuf = Buffer()
+thebuf.point, thebuf.origin = 0, 0
+thebuf.column = None
 try:            f = open(filename)
-except IOError: buf.text = ''
-else:           buf.text = f.read(); f.close()
+except IOError: thebuf.text = ''
+else:           thebuf.text = f.read(); f.close()
 
 def C(ch): return chr(ord(ch.upper()) - 64)
 
 seen = []
 
-def redisplay(new_origin, write):
+def redisplay(buf, new_origin, write):
     p, x, y = new_origin, pane_left, pane_top
     write(ansi.hide_cursor + ansi.goto(x, y))
     found_point = False
@@ -47,48 +98,6 @@ def redisplay(new_origin, write):
         write(ansi.show_cursor + ansi.restore_cursor_pos)
     return found_point
 
-def move_char(d):
-    buf.point = max(0, min(buf.point + d, len(buf.text)))
-
-def move_line(d):
-    p = start_of_line(buf.point)
-    if buf.column is None:
-        buf.column = find_column(p, buf.point)
-    if d < 0:
-        for _ in range(d, 0):
-            p = start_of_line(p - 1) # XXX ok?
-    else:
-        for _ in range(d):
-            nl = buf.text.find('\n', p) + 1
-            if nl == 0: break
-            p = nl
-    eol = buf.text.find('\n', p)
-    buf.point = min(p + buf.column, (eol if eol != -1 else len(buf.text)))
-
-def start_of_line(p):
-    return buf.text.rfind('\n', 0, p) + 1
-
-def end_of_line(p):
-    eol = buf.text.find('\n', p)
-    return eol if eol != -1 else len(buf.text)
-
-def find_column(bol, p):
-    # XXX code duplication wrt redisplay()
-    # XXX doesn't handle escaped chars
-    # A simpler solution: require tab on input to expand into spaces
-    # in the text, immediately. Um, but that doesn't do escapes either.
-    column = 0
-    for c in buf.text[bol:p]:
-        if c == '\t':
-            column = (column + 7) // 8 * 8
-        else:
-            column += 1
-    return column
-
-def insert(s):
-    buf.text = buf.text[:buf.point] + s + buf.text[buf.point:]
-    buf.point += len(s)
-
 keybindings = {}
 
 def set_key(ch, fn):
@@ -98,29 +107,29 @@ def set_key(ch, fn):
 def bind(ch): return lambda fn: set_key(ch, fn)
 
 @bind(chr(127))
-def backward_delete_char():
+def backward_delete_char(buf):
     if 0 == buf.point: return
     buf.text = buf.text[:buf.point-1] + buf.text[buf.point:]
     buf.point -= 1
 
 @bind(C('b'))
 @bind('left')
-def backward_move_char(): move_char(-1)
+def backward_move_char(buf): buf.move_char(-1)
 
 @bind(C('f'))
 @bind('right')
-def forward_move_char(): move_char(1)
+def forward_move_char(buf): buf.move_char(1)
 
 @bind('down')
-def forward_move_line(): move_line(1)
+def forward_move_line(buf): buf.move_line(1)
 
 @bind('up')
-def backward_move_line(): move_line(-1)
+def backward_move_line(buf): buf.move_line(-1)
 
 @bind(C('j'))
-def smalltalk_print_it():
+def smalltalk_print_it(buf):
     import parser, terp
-    bol, eol = start_of_line(buf.point), end_of_line(buf.point)
+    bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
     try:
         result = parser.run(line, terp.global_env)
@@ -129,14 +138,7 @@ def smalltalk_print_it():
     old_result = buf.text.find(' "=> ', bol, eol)
     if old_result == -1: old_result = eol
     # XXX acting on hacky error-prone matching
-    replace(old_result, eol, ' "=> %r"' % result)
-
-def replace(start, end, string):
-    buf.text = buf.text[:start] + string + buf.text[end:]
-    if start <= buf.point < end:
-        buf.point = min(buf.point, start + len(string))
-    elif end <= buf.point:
-        buf.point = start + len(string) + (buf.point - end)
+    buf.replace(old_result, eol, ' "=> %r"' % result)
 
 def really_read_key():
     ch = sys.stdin.read(1)
@@ -166,25 +168,25 @@ def main():
         sys.stdout.write(ansi.clear_screen)
         while True:
 
-            if not redisplay(buf.origin, lambda s: None):
-                for buf.origin in range(max(0, buf.point - cols * rows), buf.point+1):
-                    if redisplay(buf.origin, lambda s: None):
+            if not redisplay(thebuf, thebuf.origin, lambda s: None):
+                for thebuf.origin in range(max(0, thebuf.point - cols * rows), thebuf.point+1):
+                    if redisplay(thebuf, thebuf.origin, lambda s: None):
                         break
-            redisplay(buf.origin, sys.stdout.write)
+            redisplay(thebuf, thebuf.origin, sys.stdout.write)
 
             ch = read_key()
             if ch in ('', C('x'), C('q')):
                 break
             if ch in keybindings:
-                keybindings[ch]()
+                keybindings[ch](thebuf)
             else:
-                insert('\n' if ch == '\r' else ch)
+                thebuf.insert('\n' if ch == '\r' else ch)
 
             if ch not in ('up', 'down'):
-                buf.column = None
+                thebuf.column = None
 
         if ch != C('q'):
-            open(filename, 'w').write(buf.text)
+            open(filename, 'w').write(thebuf.text)
 
     finally:
         os.system('stty sane')
