@@ -28,24 +28,17 @@ def redisplay(new_origin, write):
         if p == buf.point:
             write(ansi.save_cursor_pos)
             found_point = True
-        if p == len(buf.text):
-            write(ansi.clear_to_bottom)
-            break
-        ch = buf.text[p]
-        if ch == '\n':
-            write(ansi.clear_to_eol + '\r\n')
-            x, y = 0, y+1
-        else:
-            if ch == '\t':
-                glyphs = ' ' * (8 - x % 8)
-            elif 32 <= ord(ch) < 126:
-                glyphs = ch
-            else:
-                glyphs = '\\%03o' % ord(ch)
-            for glyph in glyphs:
-                write(glyph)
-                x += 1
-                if x == cols: x, y = 0, y+1
+        ch = buf.text[p] if p < len(buf.text) else '\n'
+        glyphs = (' ' * (cols - x) if ch == '\n'
+                  else ' ' * (8 - x % 8) if ch == '\t'
+                  else ch if 32 <= ord(ch) < 126
+                  else '\\%03o' % ord(ch))
+        for glyph in glyphs:
+            write(glyph)
+            x += 1
+            if x == cols:
+                x, y = 0, y+1
+                write('\r\n')
         p += 1
     write(ansi.goto(0, 30))
     write(' '.join(map(str, seen)))
