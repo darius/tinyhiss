@@ -7,6 +7,8 @@ import ansi
 
 filename = sys.argv[1]
 cols, rows = 80, 24             # XXX query window size somehow
+pane_left, pane_top = 2, 1
+pane_right, pane_bottom = pane_left + cols, pane_top + rows
 
 class Buffer: pass
 buf = Buffer()
@@ -21,27 +23,26 @@ def C(ch): return chr(ord(ch.upper()) - 64)
 seen = []
 
 def redisplay(new_origin, write):
-    write(ansi.hide_cursor + ansi.home)
-    p, x, y = new_origin, 0, 0
+    p, x, y = new_origin, pane_left, pane_top
+    write(ansi.hide_cursor + ansi.goto(x, y))
     found_point = False
-    while y < rows:
+    while y < pane_bottom:
         if p == buf.point:
             write(ansi.save_cursor_pos)
             found_point = True
         ch = buf.text[p] if p < len(buf.text) else '\n'
-        glyphs = (' ' * (cols - x) if ch == '\n'
-                  else ' ' * (8 - x % 8) if ch == '\t'
-                  else ch if 32 <= ord(ch) < 126
-                  else '\\%03o' % ord(ch))
-        for glyph in glyphs:
+        p += 1
+        for glyph in (' ' * (pane_right - x) if ch == '\n'
+                      else ' ' * (8 - (x - pane_left) % 8) if ch == '\t'
+                      else ch if 32 <= ord(ch) < 126
+                      else '\\%03o' % ord(ch)):
             write(glyph)
             x += 1
-            if x == cols:
-                x, y = 0, y+1
+            if x == pane_right:
+                x, y = pane_left, y+1
+                if y == pane_bottom: break
                 write(ansi.goto(x, y))
-        p += 1
-    write(ansi.goto(0, rows+1))
-    write(' '.join(map(str, seen)))
+    write(ansi.goto(0, rows+1) + ' '.join(map(str, seen)))
     if found_point:
         write(ansi.show_cursor + ansi.restore_cursor_pos)
     return found_point
