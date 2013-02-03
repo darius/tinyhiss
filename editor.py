@@ -80,8 +80,6 @@ thebuf.text = load(filename)
 
 def C(ch): return chr(ord(ch.upper()) - 64)
 
-seen = []
-
 def redisplay(buf, new_origin, write):
     p, x, y = new_origin, pane_left, pane_top
     write(ansi.hide_cursor + ansi.goto(x, y))
@@ -102,7 +100,6 @@ def redisplay(buf, new_origin, write):
                 x, y = pane_left, y+1
                 if y == pane_bottom: break
                 write(ansi.goto(x, y))
-    write(ansi.goto(0, rows+1) + ' '.join(map(str, seen)))
     if found_point:
         write(ansi.show_cursor + ansi.restore_cursor_pos)
     return found_point
@@ -150,10 +147,7 @@ def smalltalk_print_it(buf):
     buf.replace(old_result, eol, ' "=> %r"' % result)
 
 def really_read_key():
-    ch = sys.stdin.read(1)
-    del seen[:-3]
-    seen.append(ord(ch))
-    return ch
+    return sys.stdin.read(1)
 
 def read_key():
     ch = really_read_key()
