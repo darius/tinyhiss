@@ -78,10 +78,15 @@ def load(filename):
 thebuf = Buffer()
 thebuf.text = load(filename)
 
-def C(ch): return chr(ord(ch.upper()) - 64)
+def redisplay(buf):
+    if not try_redisplay(buf, lambda s: None):
+        for buf.origin in range(max(0, buf.point - cols * rows), buf.point+1):
+            if try_redisplay(buf, lambda s: None):
+                break
+    try_redisplay(buf, sys.stdout.write)
 
-def redisplay(buf, new_origin, write):
-    p, x, y = new_origin, pane_left, pane_top
+def try_redisplay(buf, write):
+    p, x, y = buf.origin, pane_left, pane_top
     write(ansi.hide_cursor + ansi.goto(x, y))
     found_point = False
     while y < pane_bottom:
@@ -103,6 +108,8 @@ def redisplay(buf, new_origin, write):
     if found_point:
         write(ansi.show_cursor + ansi.restore_cursor_pos)
     return found_point
+
+def C(ch): return chr(ord(ch.upper()) - 64)
 
 keybindings = {}
 
@@ -173,11 +180,7 @@ def main():
         sys.stdout.write(ansi.clear_screen)
         while True:
 
-            if not redisplay(thebuf, thebuf.origin, lambda s: None):
-                for thebuf.origin in range(max(0, thebuf.point - cols * rows), thebuf.point+1):
-                    if redisplay(thebuf, thebuf.origin, lambda s: None):
-                        break
-            redisplay(thebuf, thebuf.origin, sys.stdout.write)
+            redisplay(thebuf)
 
             ch = read_key()
             if ch in ('', C('x'), C('q')):
