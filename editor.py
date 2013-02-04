@@ -176,25 +176,22 @@ def read_key():
 def main():
     os.system('stty raw -echo')
     try:
-
         sys.stdout.write(ansi.clear_screen)
-        while True:
-
-            redisplay(thebuf)
-
-            ch = read_key()
-            if ch in ('', C('x'), C('q')):
-                break
-            keybindings.get(ch, lambda buf: buf.insert(ch))(thebuf)
-
-            if ch not in ('up', 'down'):
-                thebuf.column = None
-
-        if ch != C('q'):
-            open(filename, 'w').write(thebuf.text)
-
+        reacting()
     finally:
         os.system('stty sane')
+
+def reacting():
+    while True:
+        redisplay(thebuf)
+        ch = read_key()
+        if ch in ('', C('x'), C('q')):
+            break
+        keybindings.get(ch, lambda buf: buf.insert(ch))(thebuf)
+        if ch not in ('up', 'down'):
+            thebuf.column = None
+    if ch != C('q'):
+        open(filename, 'w').write(thebuf.text)
 
 if __name__ == '__main__':
     main()
