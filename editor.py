@@ -5,14 +5,11 @@ Hacked up from https://github.com/darius/sketchbook/tree/master/editor
 import os, sys
 import ansi
 
-filename = sys.argv[1]
-cols, rows = 80, 24             # XXX query window size somehow
-pane_left, pane_top = 2, 1
-pane_right, pane_bottom = pane_left + cols, pane_top + rows
-
 class Buffer(object):
 
-    def __init__(self):
+    def __init__(self, extent, top_left):
+        self.extent = extent
+        self.top_left = top_left
         self.point = 0
         self.origin = 0
         self.column = None
@@ -75,10 +72,8 @@ def load(filename):
     else:           result = f.read(); f.close()
     return result
 
-thebuf = Buffer()
-thebuf.text = load(filename)
-
 def redisplay(buf):
+    (cols, rows) = buf.extent
     if not try_redisplay(buf, lambda s: None):
         for buf.origin in range(max(0, buf.point - cols * rows), buf.point+1):
             if try_redisplay(buf, lambda s: None):
@@ -86,24 +81,26 @@ def redisplay(buf):
     try_redisplay(buf, sys.stdout.write)
 
 def try_redisplay(buf, write):
-    p, x, y = buf.origin, pane_left, pane_top
+    (left, top), (cols, rows) = buf.top_left, buf.extent
+    right, bottom = left + cols, top + rows
+    p, (x, y) = buf.origin, buf.top_left
     write(ansi.hide_cursor + ansi.goto(x, y))
     found_point = False
-    while y < pane_bottom:
+    while y < bottom:
         if p == buf.point:
             write(ansi.save_cursor_pos)
             found_point = True
         ch = buf.text[p] if p < len(buf.text) else '\n'
         p += 1
-        for glyph in (' ' * (pane_right - x) if ch == '\n'
-                      else ' ' * (8 - (x - pane_left) % 8) if ch == '\t'
+        for glyph in (' ' * (right - x) if ch == '\n'
+                      else ' ' * (8 - (x - left) % 8) if ch == '\t'
                       else ch if 32 <= ord(ch) < 126
                       else '\\%03o' % ord(ch)):
             write(glyph)
             x += 1
-            if x == pane_right:
-                x, y = pane_left, y+1
-                if y == pane_bottom: break
+            if x == right:
+                x, y = left, y+1
+                if y == bottom: break
                 write(ansi.goto(x, y))
     if found_point:
         write(ansi.show_cursor + ansi.restore_cursor_pos)
@@ -168,6 +165,15 @@ def read_key():
             if ch == 'B': return 'down'
             if ch == 'C': return 'right'
             if ch == 'D': return 'left'
+            if ch in '13456':
+                lastch = really_read_key()
+                if lastch == '}':
+                    return {'1': 'home',
+                            '3': 'del',
+                            '4': 'end',
+                            '5': 'pgup',
+                            '6': 'pgdn'}[ch]
+                return chr(27) + '[' + ch + lastch
             return chr(27) + '[' + ch
         else:
             return chr(27) + ch
@@ -194,4 +200,8 @@ def reacting():
         open(filename, 'w').write(thebuf.text)
 
 if __name__ == '__main__':
+    filename = sys.argv[1]
+    # XXX query window size somehow
+    thebuf = Buffer((80, 24), (2, 1))
+    thebuf.text = load(filename)
     main()
