@@ -162,32 +162,25 @@ def next_buffer(buf):
     i = all_buffers.index(buf)
     current_buffer = all_buffers[(i+1) % len(all_buffers)]
 
-def really_read_key():
-    return sys.stdin.read(1)
+esc = chr(27)
+keys = {esc+'[A': 'up',
+        esc+'[B': 'down',
+        esc+'[C': 'right',
+        esc+'[D': 'left',
+        esc+'[1~': 'home',
+        esc+'[3~': 'del',
+        esc+'[4~': 'end',
+        esc+'[5~': 'pgup',
+        esc+'[6~': 'pgdn'}
+key_prefixes = set(k[:i] for k in keys for i in range(1, len(k)))
 
 def read_key():
-    ch = really_read_key()
-    if ch == chr(27):
-        ch = really_read_key()
-        if ch == '[':
-            ch = really_read_key()
-            if ch == 'A': return 'up'
-            if ch == 'B': return 'down'
-            if ch == 'C': return 'right'
-            if ch == 'D': return 'left'
-            if ch in '13456':
-                lastch = really_read_key()
-                if lastch == '~':
-                    return {'1': 'home',
-                            '3': 'del',
-                            '4': 'end',
-                            '5': 'pgup',
-                            '6': 'pgdn'}[ch]
-                return chr(27) + '[' + ch + lastch
-            return chr(27) + '[' + ch
-        else:
-            return chr(27) + ch
-    return ch
+    k = sys.stdin.read(1)
+    while k in key_prefixes:
+        k1 = sys.stdin.read(1)
+        if not k1: break
+        k += k1
+    return keys.get(k, k)
 
 def main():
     os.system('stty raw -echo')
