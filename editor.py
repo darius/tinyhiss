@@ -112,6 +112,8 @@ def set_key(ch, fn):
 
 def bind(ch): return lambda fn: set_key(ch, fn)
 
+set_key('\r', lambda buf: buf.insert('\n'))
+
 @bind(chr(127))
 def backward_delete_char(buf):
     if 0 == buf.point: return
@@ -180,10 +182,7 @@ def main():
             ch = read_key()
             if ch in ('', C('x'), C('q')):
                 break
-            if ch in keybindings:
-                keybindings[ch](thebuf)
-            else:
-                thebuf.insert('\n' if ch == '\r' else ch)
+            keybindings.get(ch, lambda buf: buf.insert(ch))(thebuf)
 
             if ch not in ('up', 'down'):
                 thebuf.column = None
