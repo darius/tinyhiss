@@ -110,6 +110,8 @@ def try_redisplay(buf, write):
         write(ansi.show_cursor + ansi.restore_cursor_pos)
     return found_point
 
+esc = chr(27)
+def M(ch): return esc + ch
 def C(ch): return chr(ord(ch.upper()) - 64)
 
 keybindings = {}
@@ -156,13 +158,22 @@ def smalltalk_print_it(buf):
     # XXX acting on hacky error-prone matching
     buf.replace(old_result, eol, ' "=> %r"' % result)
 
+@bind(M('a'))
+def smalltalk_accept(buf):
+    import parser, parson, terp
+    try:
+        classname, method_decl = buf.text.split(None, 1)
+        parser.add_method(classname, method_decl, terp.global_env)
+    except parson.Unparsable, exc:
+        buf.point = len(buf.text) - len(method_decl) + exc.position
+        buf.insert('<<Unparsable>>')
+
 @bind('pgdn')
 def next_buffer(buf):
     global current_buffer
     i = all_buffers.index(buf)
     current_buffer = all_buffers[(i+1) % len(all_buffers)]
 
-esc = chr(27)
 keys = {esc+'[1~': 'home',  esc+'[A': 'up',
         esc+'[3~': 'del',   esc+'[B': 'down',
         esc+'[4~': 'end',   esc+'[C': 'right',
