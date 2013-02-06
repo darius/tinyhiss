@@ -1,3 +1,7 @@
+"""
+Tie together the parser and interpreter.
+"""
+
 import fileout, parser, terp
 
 changes = open('changes.hiss', 'a')
@@ -14,8 +18,7 @@ def ensure_class(name, classes):
 
 def run(text, classes):
     block = parser.parse_code(text, classes)
-    call_it = (None, (), terp.final_k), block
-    return terp.trampoline(*call_it)
+    return terp.trampoline((None, (), terp.final_k), block)
 
 fact = """\
 factorial: n
