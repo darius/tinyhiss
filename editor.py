@@ -146,11 +146,11 @@ def backward_move_line(buf): buf.move_line(-1)
 
 @bind(C('j'))
 def smalltalk_print_it(buf):
-    import parser, terp
+    import hiss, terp
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
     try:
-        result = parser.run(line, terp.global_env)
+        result = hiss.run(line, terp.global_env)
     except Exception, e:
         result = e
     old_result = buf.text.find(' "=> ', bol, eol)
@@ -160,10 +160,10 @@ def smalltalk_print_it(buf):
 
 @bind(M('a'))
 def smalltalk_accept(buf):
-    import parser, parson, terp
+    import hiss, parson, terp
     try:
         classname, method_decl = buf.text.split(None, 1)
-        parser.add_method(classname, method_decl, terp.global_env)
+        hiss.add_method(classname, method_decl, terp.global_env)
     except parson.Unparsable, exc:
         buf.point = len(buf.text) - len(method_decl) + exc.position
         buf.insert('<<Unparsable>>')

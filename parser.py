@@ -119,23 +119,9 @@ def mk_m3(*args):
 
 grammar = Grammar(grammar_text)(**globals())
 
-def ensure_class(name, classes):
-    if name not in classes:
-        classes[name] = terp.Class({}, ())
-    return classes[name]
-
-def add_method(class_name, text, classes):
-    (selector, method), = grammar.top_method(text)
-    ensure_class(class_name, classes).put_method(selector, method)
-
 def parse_code(text, classes):
     localvars, body = grammar.top_code(text)
     return terp.Block(None, None, terp.Code((), localvars, body))
-
-def run(text, classes):
-    block = parse_code(text, classes)
-    call_it = (None, (), terp.final_k), block
-    return terp.trampoline(*call_it)
 
 ## grammar.code('2 + 3 negate')
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
@@ -157,28 +143,3 @@ def run(text, classes):
 
 ## grammar.method_decl('foo |whee| whee := 42. whee')
 #. (('foo', _Block(receiver=None, env=None, code=_Code(params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee'))))),)
-
-fact = """\
-factorial: n
-
-0 = n
-    ifTrue: [1]
-    ifFalse: [n * (self factorial: n-1)]
-"""
-## add_method('Factorial', fact, terp.global_env)
-## run("Factorial new factorial: 5", terp.global_env)
-#. 120
-
-fact2 = """\
-factorial
-
-0 = self
-    ifTrue: [1]
-    ifFalse: [self * (self-1) factorial]
-"""
-## add_method('Number', fact2, terp.global_env)
-## run("5 factorial", terp.global_env)
-#. 120
-
-## run("3 + 4 * 5", terp.global_env)
-#. 35
