@@ -29,10 +29,8 @@ class Thing(namedtuple('_Thing', 'class_ data')):
     def put(self, key, value):
         self.data[self.class_.ivar_index[key]] = value
 
-class Class(object):
+class Class(namedtuple('_Class', 'methods ivars')):
     def __init__(self, methods, ivars):
-        self.methods = methods
-        self.ivars = ivars
         self.ivar_index = dict(zip(ivars, range(len(ivars))))
     def get_method(self, selector):
         try:
