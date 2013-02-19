@@ -24,8 +24,8 @@ fact = """\
 factorial: n
 
 0 = n
-    ifTrue: [1]
-    ifFalse: [n * (self factorial: n-1)]
+    if-so: {1}
+    if-not: {n * (I factorial: n - 1)}
 """
 ## add_method('Factorial', fact, terp.global_env)
 ## run("Factorial new factorial: 5", terp.global_env)
@@ -34,9 +34,9 @@ factorial: n
 fact2 = """\
 factorial
 
-0 = self
-    ifTrue: [1]
-    ifFalse: [self * (self-1) factorial]
+I = 0
+    if-so: {1}
+    if-not: {me * (me - 1) factorial}
 """
 ## add_method('Number', fact2, terp.global_env)
 ## run("5 factorial", terp.global_env)

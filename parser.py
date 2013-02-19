@@ -11,20 +11,20 @@ top_method = method_decl ~/./.
 
 method_decl = method_header code :mk_method.
 method_header = unary_selector :mk_unary_header
-              | binary_selector bindable :mk_binary_header
-              | (keyword bindable)+ :mk_keyword_header.
+              | binary_selector name :mk_binary_header
+              | (keyword name)+ :mk_keyword_header.
 
 unary_selector = id ~':' _.
 binary_selector = /([~!@%&*\-+=|\\<>,?\/]+)/_.
 keyword = id /(:)/_ :join.
 
 code = locals? :hug opt_stmts.
-opt_stmts = stmts | :mk_self.
-locals = '|'_ bindable* '|'_.
-
+locals = '|'_ name* '|'_.
+opt_stmts = stmts | :mk_nil.
 stmts = stmt ('.'_ stmt :mk_then)* ('.'_)?.
 
-stmt = bindable ':='_ expr :mk_var_put
+stmt = 'my'__ name ':='_ expr :mk_slot_put
+     |        name ':='_ expr :mk_local_put
      | '^'_ expr :mk_return
      | expr.
 
@@ -36,36 +36,34 @@ e2 = e1 (binary_selector e1 :mk_e2)*.
 m3 = (keyword e2)+ :mk_m3.
 
 operand = block
-        | literal
-        | bindable :mk_var_get
+        | 'nil'   ~idchar _  :mk_nil
+        | 'false' ~idchar _  :mk_false
+        | 'true'  ~idchar _  :mk_true
+        | 'I'     ~idchar _  :mk_self
+        | 'me'    ~idchar _  :mk_self
+        | 'my'__ name        :mk_slot_get
+        | name               :mk_var_get
+        | /-?(\d+)/_         :mk_int  # XXX add base-r literals, floats, and scaled decimals
+        | string_literal     :mk_string
         | '('_ stmt ')'_.
 
-block = '['_ block_args? :hug code ']'_ :mk_block.
-block_args = (':'_ bindable)* '|'_.
+reserved = /nil|false|true|I|me|my/ ~idchar.
 
-literal = constant_ref
-        | /self\b/_   :mk_self
-        | /super\b/_  :mk_super
-        | /-?(\d+)/_  :mk_int  # XXX add base-r literals, floats, and scaled decimals
-        | string_literal :mk_string
-        | '#' nested_array.
-
-constant_ref = /nil\b/_    :mk_nil
-             | /false\b/_  :mk_false
-             | /true\b/_   :mk_true.
+block = '{'_ block_args? :hug code '}'_ :mk_block.
+block_args = (':'_ name)* '|'_.
 
 string_literal = /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
-nested_array = '('_ array_element* ')'_ :mk_array.
-array_element = literal | nested_array.
+name = ~reserved id _.  # XXX this ~reserved should look for just 'my', not 'my'__name
 
-id = /([A-Za-z]\w*)/.
-bindable = ~reserved id _.
-reserved = constant_ref | /self\b/_ | /super\b/_.
+id = /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
+idchar = /[_A-Za-z0-9-]/.
 
-_ = (/\s/ | comment)*.
-comment = /"[^"]*"/.
+__ = whitespace+.
+_ = whitespace*.
+whitespace = (/\s/ | comment).
+comment = /--[>|\s][^\n]*/.
 """
 
 mk_unary_header   = lambda selector: (selector, ())
@@ -83,8 +81,15 @@ mk_super  = lambda: XXX
 mk_int    = lambda s: terp.Constant(int(s))
 mk_string = lambda s: terp.Constant(s)
 
-mk_var_get = terp.VarGet
-mk_var_put = terp.VarPut
+mk_slot_get = terp.SlotGet
+mk_slot_put = terp.SlotPut
+
+def mk_var_get(name):
+    return terp.GlobalGet(name) if name[:1].isupper() else terp.LocalGet(name)
+
+def mk_local_put(name, expr):
+    assert not name[:1].isupper()
+    return terp.LocalPut(name, expr)
 
 mk_block = terp.Code
 
@@ -95,6 +100,7 @@ mk_array  = lambda *literals: XXX
 
 def mk_cascade(operand, m1):
     send = m1(operand)
+    # XXX I think the innermost Send still needs to be rewritten
     return terp.Cascade(send.subject, send.selector, send.operands)
 
 def mk_send(operand, m1):
@@ -127,7 +133,7 @@ def parse_code(text, classes):
 #. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
 
 ## grammar.code('a b; c; d')
-#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_VarGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
+#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_LocalGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
 
 ## grammar.top_code("2")
 #. ((), _Constant(value=2))
@@ -135,11 +141,11 @@ def parse_code(text, classes):
 #. ((), _Constant(value='hi'))
 
 ## grammar.method_decl('+ n\nmyValue + n')
-#. (('+', _Block(receiver=None, env=None, code=_Code(params=('n',), locals=(), expr=_Send(subject=_VarGet(name='myValue'), selector='+', operands=(_VarGet(name='n'),))))),)
-## grammar.method_decl('hurray  "comment" [42] if: true else: [137]')
+#. (('+', _Block(receiver=None, env=None, code=_Code(params=('n',), locals=(), expr=_Send(subject=_LocalGet(name='myValue'), selector='+', operands=(_LocalGet(name='n'),))))),)
+## grammar.method_decl('hurray  -- comment\n {42} if: true else: {137}')
 #. (('hurray', _Block(receiver=None, env=None, code=_Code(params=(), locals=(), expr=_Send(subject=_Code(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _Code(params=(), locals=(), expr=_Constant(value=137))))))),)
 ## grammar.method_decl("at: x put: y   myTable at: '$'+x put: y")
-#. (('at:put:', _Block(receiver=None, env=None, code=_Code(params=('x', 'y'), locals=(), expr=_Send(subject=_VarGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_VarGet(name='x'),)), _VarGet(name='y')))))),)
+#. (('at:put:', _Block(receiver=None, env=None, code=_Code(params=('x', 'y'), locals=(), expr=_Send(subject=_LocalGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_LocalGet(name='x'),)), _LocalGet(name='y')))))),)
 
 ## grammar.method_decl('foo |whee| whee := 42. whee')
-#. (('foo', _Block(receiver=None, env=None, code=_Code(params=(), locals=('whee',), expr=_Then(expr1=_VarPut(name='whee', expr=_Constant(value=42)), expr2=_VarGet(name='whee'))))),)
+#. (('foo', _Block(receiver=None, env=None, code=_Code(params=(), locals=('whee',), expr=_Then(expr1=_LocalPut(name='whee', expr=_Constant(value=42)), expr2=_LocalGet(name='whee'))))),)
