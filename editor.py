@@ -213,8 +213,7 @@ def reacting():
             buf.save()
 
 if __name__ == '__main__':
-    ROWS, COLS = rows, columns = map(int,
-                                     os.popen('stty size', 'r').read().split())
+    ROWS, COLS = map(int, os.popen('stty size', 'r').read().split())
     all_buffers = [Buffer(sys.argv[1], (COLS//2-1, ROWS), (0, 0)),
                    Buffer(sys.argv[2], (COLS//2-1, ROWS), (COLS//2+1, 0))]
     current_buffer = all_buffers[0]
