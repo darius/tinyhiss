@@ -213,10 +213,8 @@ def reacting():
             buf.save()
 
 if __name__ == '__main__':
-    # XXX other ways to find out the window size?
     ROWS, COLS = rows, columns = map(int,
                                      os.popen('stty size', 'r').read().split())
-    #(int(os.environ.get('COLUMNS', 80)), int(os.environ.get('LINES', 24)))
     all_buffers = [Buffer(sys.argv[1], (COLS//2-1, ROWS), (0, 0)),
                    Buffer(sys.argv[2], (COLS//2-1, ROWS), (COLS//2+1, 0))]
     current_buffer = all_buffers[0]
