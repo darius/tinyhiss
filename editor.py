@@ -153,10 +153,10 @@ def smalltalk_print_it(buf):
         result = hiss.run(line, terp.global_env)
     except Exception, e:
         result = e
-    old_result = buf.text.find(' "=> ', bol, eol)
+    old_result = buf.text.find(' --> ', bol, eol)
     if old_result == -1: old_result = eol
     # XXX acting on hacky error-prone matching
-    buf.replace(old_result, eol, ' "=> %r"' % result)
+    buf.replace(old_result, eol, ' --> %r' % result)
 
 @bind(M('a'))
 def smalltalk_accept(buf):
@@ -214,8 +214,9 @@ def reacting():
 
 if __name__ == '__main__':
     # XXX other ways to find out the window size?
-    COLS, ROWS = (int(os.environ.get('COLUMNS', 80)),
-                  int(os.environ.get('LINES', 24)))
+    ROWS, COLS = rows, columns = map(int,
+                                     os.popen('stty size', 'r').read().split())
+    #(int(os.environ.get('COLUMNS', 80)), int(os.environ.get('LINES', 24)))
     all_buffers = [Buffer(sys.argv[1], (COLS//2-1, ROWS), (0, 0)),
                    Buffer(sys.argv[2], (COLS//2-1, ROWS), (COLS//2+1, 0))]
     current_buffer = all_buffers[0]
