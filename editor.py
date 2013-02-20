@@ -149,14 +149,17 @@ def smalltalk_print_it(buf):
     import hiss, terp
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
+    # XXX hacky error-prone matching; move this to parser module
+    old_result = buf.text.find(' --> ', bol, eol)
+    if old_result == -1: old_result = buf.text.find(' --| ', bol, eol)
+    if old_result == -1: old_result = eol
     try:
+        comment = '-->'
         result = hiss.run(line, terp.global_env)
     except Exception, e:
+        comment = '--|'
         result = e
-    old_result = buf.text.find(' --> ', bol, eol)
-    if old_result == -1: old_result = eol
-    # XXX acting on hacky error-prone matching
-    buf.replace(old_result, eol, ' --> %r' % result)
+    buf.replace(old_result, eol, ' %s %r' % (comment, result))
 
 @bind(M('a'))
 def smalltalk_accept(buf):
