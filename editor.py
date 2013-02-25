@@ -2,7 +2,7 @@
 Hacked up from https://github.com/darius/sketchbook/tree/master/editor
 """
 
-import os, sys
+import os, sys, traceback
 import ansi
 
 class Buffer(object):
@@ -155,11 +155,19 @@ def smalltalk_print_it(buf):
     if old_result == -1: old_result = eol
     try:
         comment = '-->'
-        result = hiss.run(line, terp.global_env)
+        result = repr(hiss.run(line, terp.global_env))
     except Exception, e:
         comment = '--|'
-        result = e
-    buf.replace(old_result, eol, ' %s %r' % (comment, result))
+        if False:               # Set to True for tracebacks
+            result = traceback.format_exc().replace('\n', ' / ')
+        else:
+            result = format_exception(sys.exc_info())
+    buf.replace(old_result, eol, ' %s %s' % (comment, result))
+
+def format_exception((etype, value, tb), limit=None):
+    exc_lines = traceback.format_exception_only(etype, value)
+    exc_only = ' / '.join(exc_lines).rstrip('\n')
+    return exc_only
 
 @bind(M('a'))
 def smalltalk_accept(buf):
