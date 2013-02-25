@@ -16,12 +16,15 @@ def call(receiver, selector, args, k):
 def get_class(x):
     if x is None:                        return nil_class
     elif isinstance(x, bool):            return true_class if x else false_class
-    elif isinstance(x, (int, float)):    return num_class
-    elif isinstance(x, (str, unicode)):  return string_class
+    elif isinstance(x, num_types):       return num_class
+    elif isinstance(x, str_types):       return string_class
     elif isinstance(x, Block):           return block_class
     elif isinstance(x, Class):           return class_class
     elif callable(x):                    return primitive_method_class
     else:                                return x.class_
+
+str_types =  (str, unicode)
+num_types = (int, long, float)
 
 class Thing(namedtuple('_Thing', 'class_ data')):
     def get(self, key):
@@ -82,7 +85,7 @@ num_methods = {'+': lambda (rcvr, (other,), k): (rcvr + as_number(other), k),
 num_class = Class(num_methods, ())
 
 def as_number(thing):
-    if isinstance(thing, (int, float)):
+    if isinstance(thing, num_types):
         return thing
     assert False, thing
 
