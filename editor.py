@@ -156,18 +156,18 @@ def smalltalk_print_it(buf):
     try:
         comment = '-->'
         result = repr(hiss.run(line, terp.global_env))
-    except Exception, e:
+    except:
         comment = '--|'
-        if False:               # Set to True for tracebacks
-            result = traceback.format_exc().replace('\n', ' / ')
+        if True:               # Set to True for tracebacks
+            result = traceback.format_exc()
         else:
             result = format_exception(sys.exc_info())
-    buf.replace(old_result, eol, ' %s %s' % (comment, result))
+    buf.replace(old_result, eol,
+                ' %s %s' % (comment, result.replace('\n', ' / ')))
 
 def format_exception((etype, value, tb), limit=None):
-    exc_lines = traceback.format_exception_only(etype, value)
-    exc_only = ' / '.join(exc_lines).rstrip('\n')
-    return exc_only
+    lines = traceback.format_exception_only(etype, value)
+    return '\n'.join(lines).rstrip('\n')
 
 @bind(M('a'))
 def smalltalk_accept(buf):
