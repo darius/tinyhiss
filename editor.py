@@ -158,7 +158,7 @@ def smalltalk_print_it(buf):
         result = repr(hiss.run(line, terp.global_env))
     except:
         comment = '--|'
-        if True:               # Set to True for tracebacks
+        if False:               # Set to True for tracebacks
             result = traceback.format_exc()
         else:
             result = format_exception(sys.exc_info())
