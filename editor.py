@@ -173,8 +173,8 @@ def format_exception((etype, value, tb), limit=None):
 def smalltalk_accept(buf):
     import hiss, parson, terp
     try:
-        classname, method_decl = buf.text.split(None, 1)
-        hiss.add_method(classname, method_decl, terp.global_env)
+        class_name, method_decl = buf.text.split(None, 1)
+        hiss.add_method(class_name, method_decl, terp.global_env)
     except parson.Unparsable, exc:
         buf.point = len(buf.text) - len(method_decl) + exc.position
         buf.insert('<<Unparsable>>')
