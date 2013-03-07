@@ -63,26 +63,26 @@ class Buffer(object):
         self.text = self.text[:self.point] + s + self.text[self.point:]
         self.point += len(s)
 
-    def replace(buf, start, end, string):
-        buf.text = buf.text[:start] + string + buf.text[end:]
-        if start <= buf.point < end:
-            buf.point = min(buf.point, start + len(string))
-        elif end <= buf.point:
-            buf.point = start + len(string) + (buf.point - end)
+    def replace(self, start, end, string):
+        self.text = self.text[:start] + string + self.text[end:]
+        if start <= self.point < end:
+            self.point = min(self.point, start + len(string))
+        elif end <= self.point:
+            self.point = start + len(string) + (self.point - end)
+
+    def redisplay(self):
+        (cols, rows) = self.extent
+        if not try_redisplay(self, lambda s: None):
+            for self.origin in range(max(0, self.point - cols * rows), self.point+1):
+                if try_redisplay(self, lambda s: None):
+                    break
+        try_redisplay(self, sys.stdout.write)
 
 def load(filename):
     try:            f = open(filename)
     except IOError: result = ''
     else:           result = f.read(); f.close()
     return result
-
-def redisplay(buf):
-    (cols, rows) = buf.extent
-    if not try_redisplay(buf, lambda s: None):
-        for buf.origin in range(max(0, buf.point - cols * rows), buf.point+1):
-            if try_redisplay(buf, lambda s: None):
-                break
-    try_redisplay(buf, sys.stdout.write)
 
 def try_redisplay(buf, write):
     (left, top), (cols, rows) = buf.top_left, buf.extent
@@ -210,9 +210,9 @@ def main():
 
 def reacting():
     for buf in all_buffers:
-        redisplay(buf)
+        buf.redisplay()
     while True:
-        redisplay(current_buffer)
+        current_buffer.redisplay()
         ch = read_key()
         if ch in ('', C('x'), C('q')):
             break
