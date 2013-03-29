@@ -77,7 +77,6 @@ mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)
 mk_true   = lambda: terp.Constant(True)
 mk_self   = terp.Self
-mk_super  = lambda: XXX
 mk_int    = lambda s: terp.Constant(int(s))
 mk_string = lambda s: terp.Constant(s)
 
@@ -96,7 +95,6 @@ mk_block = terp.Code
 mk_then = terp.Then
 
 mk_return = lambda e: XXX
-mk_array  = lambda *literals: XXX
 
 def mk_cascade(operand, m1):
     send = m1(operand)
