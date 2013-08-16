@@ -55,7 +55,7 @@ block_args = (':'_ name)* '|'_.
 string_literal = /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
-name = ~reserved id _.  # XXX this ~reserved should look for just 'my', not 'my'__name
+name = ~reserved id _.
 
 id = /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
 idchar = /[_A-Za-z0-9-]/.
