@@ -7,8 +7,6 @@ from collections import namedtuple
 def trampoline(state):
     k, value = state
     while k is not None:
-        assert isinstance(k, tuple), "%r not a tuple" % (k,)
-        assert len(k) == 3, "%r not a 3-tuple" % (k,)
         fn, free_var, k = k
         k, value = fn(free_var, value, k)
     return value
@@ -17,14 +15,14 @@ def call(receiver, selector, args, k):
     return (get_class(receiver).get_method(selector), receiver, k), args
 
 def get_class(x):
-    if x is None:                        return nil_class
-    elif isinstance(x, bool):            return true_class if x else false_class
-    elif isinstance(x, num_types):       return num_class
-    elif isinstance(x, str_types):       return string_class
-    elif isinstance(x, Block):           return block_class
-    elif isinstance(x, Class):           return class_class # TODO: define .class_ on these?
-    elif callable(x):                    return primitive_method_class
-    else:                                return x.class_
+    if x is None:                  return nil_class
+    elif isinstance(x, bool):      return true_class if x else false_class
+    elif isinstance(x, num_types): return num_class
+    elif isinstance(x, str_types): return string_class
+    elif isinstance(x, Block):     return block_class
+    elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
+    elif callable(x):              return primitive_method_class
+    else:                          return x.class_
 
 str_types =  (str, unicode)
 num_types = (int, long, float)
