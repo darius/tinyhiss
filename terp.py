@@ -82,6 +82,7 @@ num_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
                '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
                '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
                '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
+               '<': lambda rcvr, (other,), k: (k, rcvr < other),
                }
 num_class = Class(num_methods, ())
 
