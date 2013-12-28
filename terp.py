@@ -12,7 +12,7 @@ def trampoline(state):
     return value
 
 def call(receiver, selector, args, k):
-    return (get_class(receiver).get_method(selector), receiver, k), args
+    return get_class(receiver).get_method(selector)(receiver, args, k)
 
 def get_class(x):
     if x is None:                  return nil_class
