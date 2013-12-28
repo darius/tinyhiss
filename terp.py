@@ -4,14 +4,14 @@ AST interpreter
 
 from collections import namedtuple
 
-def trampoline(value, k):
+def trampoline(k, value):
     while k is not None:
 #        print value, k#.__name__
-        value, k = k(value)
+        k, value = k(value)
     return value
 
 def call(receiver, selector, args, k):
-    return (receiver, args, k), get_class(receiver).get_method(selector)
+    return get_class(receiver).get_method(selector), (receiver, args, k)
 
 def get_class(x):
     if x is None:                        return nil_class
@@ -70,17 +70,17 @@ class Env(namedtuple('_Env', 'rib container')):
             raise KeyError(key)
 
 def new_method((receiver, arguments, k)):
-    return receiver.make(), k
+    return k, receiver.make()
 
 class_class = Class(dict(new=new_method), ())
 
 block_class = Class(dict(value=lambda (receiver, arguments, k): receiver((None, (), k))),
                     ())
 
-num_methods = {'+': lambda (rcvr, (other,), k): (rcvr + as_number(other), k),
-               '*': lambda (rcvr, (other,), k): (rcvr * as_number(other), k),
-               '-': lambda (rcvr, (other,), k): (rcvr - as_number(other), k),
-               '=': lambda (rcvr, (other,), k): (rcvr == other, k), # XXX object method
+num_methods = {'+': lambda (rcvr, (other,), k): (k, rcvr + as_number(other)),
+               '*': lambda (rcvr, (other,), k): (k, rcvr * as_number(other)),
+               '-': lambda (rcvr, (other,), k): (k, rcvr - as_number(other)),
+               '=': lambda (rcvr, (other,), k): (k, rcvr == other), # XXX object method
                }
 num_class = Class(num_methods, ())
 
@@ -91,15 +91,15 @@ def as_number(thing):
 
 class Self(namedtuple('_Self', '')):
     def eval(self, receiver, env, k):
-        return receiver, k
+        return k, receiver
 
 class Constant(namedtuple('_Constant', 'value')):
     def eval(self, receiver, env, k):
-        return self.value, k
+        return k, self.value
 
 class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, receiver, env, k):
-        return Block(receiver, env, self), k
+        return k, Block(receiver, env, self)
 
 def with_key(key, thunk):
     try: return thunk()
@@ -108,30 +108,30 @@ def with_key(key, thunk):
 
 class GlobalGet(namedtuple('_GlobalGet', 'name')):
     def eval(self, receiver, env, k):
-        return with_key(self.name, lambda: (global_env[self.name], k))
+        return with_key(self.name, lambda: (k, global_env[self.name]))
 
 class LocalGet(namedtuple('_LocalGet', 'name')):
     def eval(self, receiver, env, k):
-        return with_key(self.name, lambda: (env.get(self.name), k))
+        return with_key(self.name, lambda: (k, env.get(self.name)))
 
 class LocalPut(namedtuple('_LocalPut', 'name expr')):
     def eval(self, receiver, env, k):
         def putting(value):
             with_key(self.name, lambda: env.put(self.name, value))
-            return value, k
+            return k, value
         return self.expr.eval(receiver, env, putting)
 
 class SlotGet(namedtuple('_SlotGet', 'name')):
     def eval(self, receiver, env, k):
         return with_key(self.name,
-                        lambda: (as_slottable(receiver).get(self.name), k))
+                        lambda: (k, as_slottable(receiver).get(self.name)))
 
 class SlotPut(namedtuple('_SlotPut', 'name expr')):
     def eval(self, receiver, env, k):
         def putting(value):
             with_key(self.name,
                      lambda: as_slottable(receiver).put(self.name, value))
-            return value, k
+            return k, value
         return self.expr.eval(receiver, env, putting)
 
 def as_slottable(thing):
@@ -149,7 +149,7 @@ class Cascade(namedtuple('_Cascade', 'subject selector operands')):
                 self.operands, receiver, env,
                 lambda args: call(
                     subject, self.selector, args,
-                    lambda _: (subject, k))))
+                    lambda _: (k, subject))))
 
 class Send(namedtuple('_Send', 'subject selector operands')):
     def eval(self, receiver, env, k):
@@ -161,11 +161,11 @@ class Send(namedtuple('_Send', 'subject selector operands')):
 
 def evrands(operands, receiver, env, k):
     if not operands:
-        return (), k
+        return k, ()
     else:
         return operands[0].eval(receiver, env,
                                 lambda val: evrands(operands[1:], receiver, env,
-                                                    lambda vals: ((val,)+vals, k)))
+                                                    lambda vals: (k, (val,)+vals)))
 
 
 class Then(namedtuple('_Then', 'expr1 expr2')):
@@ -188,7 +188,7 @@ global_env['Number'] = num_class
 global_env['False']  = false_class
 global_env['True']   = true_class
 
-final_k = lambda result: (result, None)
+final_k = lambda result: (None, result)
 
 
 # Testing
@@ -201,7 +201,7 @@ smoketest = smoketest_expr.eval(None, None, final_k)
 def make(class_, k):
     return call(class_, 'new', (),
                 lambda instance: call(instance, 'init', (),
-                                      lambda _: (instance, k)))
+                                      lambda _: (k, instance)))
 
 object_init = Method((), (), Self())
 
@@ -215,7 +215,7 @@ eg_class = Class(dict(yay=eg_yay,
                  ('whee',))
 eg = call(eg_class, 'new', (),
           lambda instance: call(instance, 'init_with', (42,),
-                                lambda _: (instance, final_k)))
+                                lambda _: (final_k, instance)))
 eg = trampoline(*eg)
 eg_result = call(eg, 'yay', (137,), final_k)
 ## trampoline(*eg_result)
@@ -225,7 +225,7 @@ make_eg = Method((), (),
                  Send(Cascade(Send(Constant(eg_class), 'new', ()),
                               'init_with', (Constant(42),)),
                       'yay', (Constant(137),)))
-make_eg_result = (None, (), final_k), make_eg
+make_eg_result = make_eg, (None, (), final_k)
 ## trampoline(*make_eg_result)
 #. 179
 
@@ -244,7 +244,7 @@ factorial = Method((), (),
                    Send(Send(Constant(factorial_class), 'new', ()),
                         'factorial:',
                         (Constant(5),)))
-try_factorial = (None, (), final_k), factorial
+try_factorial = factorial, (None, (), final_k)
 ## trampoline(*try_factorial)
 #. 120
 
