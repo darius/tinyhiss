@@ -4,9 +4,9 @@ AST interpreter
 
 from collections import namedtuple
 
-def trampoline(k, value):
+def trampoline(state):
+    k, value = state
     while k is not None:
-#        print value, k#.__name__
         k, value = k(value)
     return value
 
@@ -195,7 +195,7 @@ final_k = lambda result: (None, result)
 
 smoketest_expr = Send(Constant(2), '+', (Constant(3),))
 smoketest = smoketest_expr.eval(None, None, final_k)
-## trampoline(*smoketest)
+## trampoline(smoketest)
 #. 5
 
 def make(class_, k):
@@ -216,9 +216,9 @@ eg_class = Class(dict(yay=eg_yay,
 eg = call(eg_class, 'new', (),
           lambda instance: call(instance, 'init_with', (42,),
                                 lambda _: (final_k, instance)))
-eg = trampoline(*eg)
+eg = trampoline(eg)
 eg_result = call(eg, 'yay', (137,), final_k)
-## trampoline(*eg_result)
+## trampoline(eg_result)
 #. 179
 
 make_eg = Method((), (),
@@ -226,7 +226,7 @@ make_eg = Method((), (),
                               'init_with', (Constant(42),)),
                       'yay', (Constant(137),)))
 make_eg_result = make_eg, (None, (), final_k)
-## trampoline(*make_eg_result)
+## trampoline(make_eg_result)
 #. 179
 
 # TODO: make this a method on Number
@@ -245,7 +245,7 @@ factorial = Method((), (),
                         'factorial:',
                         (Constant(5),)))
 try_factorial = factorial, (None, (), final_k)
-## trampoline(*try_factorial)
+## trampoline(try_factorial)
 #. 120
 
                   
