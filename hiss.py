@@ -10,6 +10,7 @@ def add_method(class_name, text, classes):
     (selector, method), = parser.grammar.top_method(text)
     ensure_class(class_name, classes).put_method(selector, method)
     changes.write(fileout.unparse1(class_name + ' ' + text) + '\n')
+    changes.flush()
 
 def ensure_class(name, classes):
     if name not in classes:
