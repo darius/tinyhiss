@@ -7,11 +7,14 @@ from collections import namedtuple
 def trampoline(state):
     k, value = state
     while k is not None:
-        k, value = k(value)
+        assert isinstance(k, tuple), "%r not a tuple" % (k,)
+        assert len(k) == 3, "%r not a 3-tuple" % (k,)
+        fn, free_var, k = k
+        k, value = fn(free_var, value, k)
     return value
 
 def call(receiver, selector, args, k):
-    return get_class(receiver).get_method(selector), (receiver, args, k)
+    return (get_class(receiver).get_method(selector), receiver, k), args
 
 def get_class(x):
     if x is None:                        return nil_class
@@ -19,7 +22,7 @@ def get_class(x):
     elif isinstance(x, num_types):       return num_class
     elif isinstance(x, str_types):       return string_class
     elif isinstance(x, Block):           return block_class
-    elif isinstance(x, Class):           return class_class
+    elif isinstance(x, Class):           return class_class # TODO: define .class_ on these?
     elif callable(x):                    return primitive_method_class
     else:                                return x.class_
 
@@ -39,7 +42,7 @@ class Class(namedtuple('_Class', 'methods ivars')):
         try:
             return self.methods[selector]
         except KeyError:
-            assert False, selector
+            assert False, "Unknown method: %r" % (selector,)
     def put_method(self, selector, method):
         self.methods[selector] = method
     def make(self):
@@ -49,7 +52,7 @@ def Method(params, local_vars, expr):
     return Block(None, None, Code(params, local_vars, expr))
 
 class Block(namedtuple('_Block', 'receiver env code')):
-    def __call__(self, (receiver, arguments, k)):
+    def __call__(self, receiver, arguments, k):
         rib = dict(zip(self.code.params, arguments))
         for var in self.code.locals:
             rib[var] = None
@@ -69,25 +72,25 @@ class Env(namedtuple('_Env', 'rib container')):
         else:
             raise KeyError(key)
 
-def new_method((receiver, arguments, k)):
+def new_method(receiver, arguments, k):
     return k, receiver.make()
 
 class_class = Class(dict(new=new_method), ())
 
-block_class = Class(dict(value=lambda (receiver, arguments, k): receiver((None, (), k))),
+block_class = Class(dict(value=lambda receiver, arguments, k: receiver(None, (), k)),
                     ())
 
-num_methods = {'+': lambda (rcvr, (other,), k): (k, rcvr + as_number(other)),
-               '*': lambda (rcvr, (other,), k): (k, rcvr * as_number(other)),
-               '-': lambda (rcvr, (other,), k): (k, rcvr - as_number(other)),
-               '=': lambda (rcvr, (other,), k): (k, rcvr == other), # XXX object method
+num_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
+               '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
+               '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
+               '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
                }
 num_class = Class(num_methods, ())
 
 def as_number(thing):
     if isinstance(thing, num_types):
         return thing
-    assert False, thing
+    assert False, "Not a number: %r" % (thing,)
 
 class Self(namedtuple('_Self', '')):
     def eval(self, receiver, env, k):
@@ -116,10 +119,11 @@ class LocalGet(namedtuple('_LocalGet', 'name')):
 
 class LocalPut(namedtuple('_LocalPut', 'name expr')):
     def eval(self, receiver, env, k):
-        def putting(value):
-            with_key(self.name, lambda: env.put(self.name, value))
-            return k, value
-        return self.expr.eval(receiver, env, putting)
+        return self.expr.eval(receiver, env, (putting_k, (self, env), k))
+
+def putting_k((self, env), value, k):
+    with_key(self.name, lambda: env.put(self.name, value))
+    return k, value
 
 class SlotGet(namedtuple('_SlotGet', 'name')):
     def eval(self, receiver, env, k):
@@ -128,11 +132,12 @@ class SlotGet(namedtuple('_SlotGet', 'name')):
 
 class SlotPut(namedtuple('_SlotPut', 'name expr')):
     def eval(self, receiver, env, k):
-        def putting(value):
-            with_key(self.name,
-                     lambda: as_slottable(receiver).put(self.name, value))
-            return k, value
-        return self.expr.eval(receiver, env, putting)
+        return self.expr.eval(receiver, env, (slot_put_k, (self, env, receiver), k))
+
+def slot_put_k((self, env, receiver), value, k):
+    with_key(self.name,
+             lambda: as_slottable(receiver).put(self.name, value))
+    return k, value
 
 def as_slottable(thing):
     if not isinstance(thing, Thing):
@@ -143,36 +148,48 @@ global_env = {}
 
 class Cascade(namedtuple('_Cascade', 'subject selector operands')):
     def eval(self, receiver, env, k):
-        return self.subject.eval(
-            receiver, env,
-            lambda subject: evrands(
-                self.operands, receiver, env,
-                lambda args: call(
-                    subject, self.selector, args,
-                    lambda _: (k, subject))))
+        return self.subject.eval(receiver, env,
+                                 (cascade_evrands_k, (self, receiver, env), k))
+
+def cascade_evrands_k((self, receiver, env), subject, k):
+    return evrands(self.operands, receiver, env,
+                   (call_k, (subject, self),
+                    (ignore_k, subject, k)))
+
+def ignore_k(result, _, k):
+    return k, result
 
 class Send(namedtuple('_Send', 'subject selector operands')):
     def eval(self, receiver, env, k):
-        return self.subject.eval(
-            receiver, env,
-            lambda subject: evrands(
-                self.operands, receiver, env,
-                lambda args: call(subject, self.selector, args, k)))
+        return self.subject.eval(receiver, env,
+                                 (evrands_k, (self, receiver, env), k))
+
+def evrands_k((self, receiver, env), subject, k):
+    return evrands(self.operands, receiver, env,
+                   (call_k, (subject, self), k))
+
+def call_k((subject, self), args, k):
+    return call(subject, self.selector, args, k)
 
 def evrands(operands, receiver, env, k):
     if not operands:
         return k, ()
     else:
         return operands[0].eval(receiver, env,
-                                lambda val: evrands(operands[1:], receiver, env,
-                                                    lambda vals: (k, (val,)+vals)))
+                                (evrands_more_k, (operands[1:], receiver, env), k))
 
+def evrands_more_k((operands, receiver, env), val, k):
+    return evrands(operands, receiver, env, (evrands_cons_k, val, k))
+
+def evrands_cons_k(val, vals, k):
+    return k, (val,)+vals
 
 class Then(namedtuple('_Then', 'expr1 expr2')):
     def eval(self, receiver, env, k):
-        return self.expr1.eval(
-            receiver, env,
-            lambda _: self.expr2.eval(receiver, env, k))
+        return self.expr1.eval(receiver, env, (then_k, (self, receiver, env), k))
+
+def then_k((self, receiver, env), _, k):
+    return self.expr2.eval(receiver, env, k)
 
 true_class = Class({'if-so:if-not:': Method(('trueBlock', 'falseBlock'), (),
                                             Send(LocalGet('trueBlock'), 'value', ()))},
@@ -188,7 +205,7 @@ global_env['Number'] = num_class
 global_env['False']  = false_class
 global_env['True']   = true_class
 
-final_k = lambda result: (None, result)
+final_k = None
 
 
 # Testing
@@ -200,8 +217,11 @@ smoketest = smoketest_expr.eval(None, None, final_k)
 
 def make(class_, k):
     return call(class_, 'new', (),
-                lambda instance: call(instance, 'init', (),
-                                      lambda _: (k, instance)))
+                (make_new_k, None, k))
+
+def make_new_k(_, instance, k):
+    return call(instance, 'init', (),
+                (ignore_k, instance, k))
 
 object_init = Method((), (), Self())
 
@@ -213,9 +233,11 @@ eg_class = Class(dict(yay=eg_yay,
                       get_whee=eg_get_whee,
                       init_with=eg_init_with),
                  ('whee',))
+def eg_init_with_k(_, instance, k):
+    return call(instance, 'init_with', (42,),
+                (ignore_k, instance, k))
 eg = call(eg_class, 'new', (),
-          lambda instance: call(instance, 'init_with', (42,),
-                                lambda _: (final_k, instance)))
+          (eg_init_with_k, None, final_k))
 eg = trampoline(eg)
 eg_result = call(eg, 'yay', (137,), final_k)
 ## trampoline(eg_result)
@@ -225,7 +247,7 @@ make_eg = Method((), (),
                  Send(Cascade(Send(Constant(eg_class), 'new', ()),
                               'init_with', (Constant(42),)),
                       'yay', (Constant(137),)))
-make_eg_result = make_eg, (None, (), final_k)
+make_eg_result = (make_eg, None, final_k), ()
 ## trampoline(make_eg_result)
 #. 179
 
@@ -244,14 +266,14 @@ factorial = Method((), (),
                    Send(Send(Constant(factorial_class), 'new', ()),
                         'factorial:',
                         (Constant(5),)))
-try_factorial = factorial, (None, (), final_k)
+try_factorial = (factorial, None, final_k), ()
 ## trampoline(try_factorial)
 #. 120
 
                   
 """
 to do:
-- inheritance
+- inheritance. actually traits instead.
 - Object class with default 'init', '=', etc.
 - reflection
   - smalltalk access to instance vars of kernel classes
