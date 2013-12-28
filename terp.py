@@ -15,14 +15,15 @@ def call(receiver, selector, args, k):
     return get_class(receiver).get_method(selector)(receiver, args, k)
 
 def get_class(x):
-    if x is None:                  return nil_class
+    if isinstance(x, Thing):       return x.class_
     elif isinstance(x, bool):      return true_class if x else false_class
     elif isinstance(x, num_types): return num_class
     elif isinstance(x, str_types): return string_class
+    elif x is None:                return nil_class
     elif isinstance(x, Block):     return block_class
     elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
-    elif callable(x):              return primitive_method_class
-    else:                          return x.class_
+    elif callable(x):              return primitive_method_class # TODO: define this
+    else:                          assert False
 
 str_types =  (str, unicode)
 num_types = (int, long, float)
@@ -131,9 +132,9 @@ class SlotGet(namedtuple('_SlotGet', 'name')):
 
 class SlotPut(namedtuple('_SlotPut', 'name expr')):
     def eval(self, receiver, env, k):
-        return self.expr.eval(receiver, env, (slot_put_k, (self, env, receiver), k))
+        return self.expr.eval(receiver, env, (slot_put_k, (self, receiver, env), k))
 
-def slot_put_k((self, env, receiver), value, k):
+def slot_put_k((self, receiver, env), value, k):
     with_key(self.name,
              lambda: as_slottable(receiver).put(self.name, value))
     return k, value
