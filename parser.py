@@ -123,9 +123,9 @@ def mk_m3(*args):
 
 grammar = Grammar(grammar_text)(**globals())
 
-def parse_code(text, env):
+def parse_code(text):
     localvars, body = grammar.top_code(text)
-    return terp.Block(None, env, terp.Code((), localvars, body))
+    return terp.Code((), localvars, body)
 
 ## grammar.code('2 + 3 negate')
 #. ((), (2 + (3 negate)))

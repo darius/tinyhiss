@@ -18,8 +18,11 @@ def ensure_class(name, classes):
     return classes[name]
 
 def run(text, env):
-    block = parser.parse_code(text, env)
+    block = parse_block(text, env)
     return terp.trampoline(block(None, (), terp.final_k))
+
+def parse_block(text, env):
+    return terp.Block(None, env, parser.parse_code(text))
 
 fact = """\
 factorial: n
