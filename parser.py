@@ -123,27 +123,27 @@ def mk_m3(*args):
 
 grammar = Grammar(grammar_text)(**globals())
 
-def parse_code(text, classes):
+def parse_code(text, env):
     localvars, body = grammar.top_code(text)
-    return terp.Block(None, None, terp.Code((), localvars, body))
+    return terp.Block(None, env, terp.Code((), localvars, body))
 
 ## grammar.code('2 + 3 negate')
-#. ((), _Send(subject=_Constant(value=2), selector='+', operands=(_Send(subject=_Constant(value=3), selector='negate', operands=()),)))
+#. ((), (2 + (3 negate)))
 
 ## grammar.code('a b; c; d')
-#. ((), _Cascade(subject=_Cascade(subject=_Send(subject=_LocalGet(name='a'), selector='b', operands=()), selector='c', operands=()), selector='d', operands=()))
+#. ((), (((a b); c); d))
 
 ## grammar.top_code("2")
-#. ((), _Constant(value=2))
+#. ((), 2)
 ## grammar.top_code("'hi'")
-#. ((), _Constant(value='hi'))
+#. ((), 'hi')
 
 ## grammar.method_decl('+ n\nmyValue + n')
-#. (('+', _Block(receiver=None, env=None, code=_Code(params=('n',), locals=(), expr=_Send(subject=_LocalGet(name='myValue'), selector='+', operands=(_LocalGet(name='n'),))))),)
+#. (('+', {:n | (myValue + n)}),)
 ## grammar.method_decl('hurray  -- comment\n {42} if: true else: {137}')
-#. (('hurray', _Block(receiver=None, env=None, code=_Code(params=(), locals=(), expr=_Send(subject=_Code(params=(), locals=(), expr=_Constant(value=42)), selector='if:else:', operands=(_Constant(value=True), _Code(params=(), locals=(), expr=_Constant(value=137))))))),)
+#. (('hurray', {({42} if: True else: {137})}),)
 ## grammar.method_decl("at: x put: y   myTable at: '$'+x put: y")
-#. (('at:put:', _Block(receiver=None, env=None, code=_Code(params=('x', 'y'), locals=(), expr=_Send(subject=_LocalGet(name='myTable'), selector='at:put:', operands=(_Send(subject=_Constant(value='$'), selector='+', operands=(_LocalGet(name='x'),)), _LocalGet(name='y')))))),)
+#. (('at:put:', {:x :y | (myTable at: ('$' + x) put: y)}),)
 
 ## grammar.method_decl('foo |whee| whee := 42. whee')
-#. (('foo', _Block(receiver=None, env=None, code=_Code(params=(), locals=('whee',), expr=_Then(expr1=_LocalPut(name='whee', expr=_Constant(value=42)), expr2=_LocalGet(name='whee'))))),)
+#. (('foo', {|whee| whee <- 42. whee}),)

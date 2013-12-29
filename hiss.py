@@ -17,8 +17,8 @@ def ensure_class(name, classes):
         classes[name] = terp.Class({}, ())
     return classes[name]
 
-def run(text, classes):
-    block = parser.parse_code(text, classes)
+def run(text, env):
+    block = parser.parse_code(text, env)
     return terp.trampoline(block(None, (), terp.final_k))
 
 fact = """\
