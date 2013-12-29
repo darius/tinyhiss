@@ -98,7 +98,7 @@ def try_redisplay(buf, write):
         p += 1
         for glyph in (' ' * (right - x) if ch == '\n'
                       else ' ' * (8 - (x - left) % 8) if ch == '\t'
-                      else ch if 32 <= ord(ch) < 126
+                      else ch if 32 <= ord(ch) < 127
                       else '\\%03o' % ord(ch)):
             write(glyph)
             x += 1
