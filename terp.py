@@ -8,7 +8,7 @@ def trampoline(state):
     k, value = state
     while k is not None:
         fn, free_var, k = k
-        k, value = fn(free_var, value, k)
+        k, value = fn(value, free_var, k)
     return value
 
 def call(receiver, selector, args, k):
@@ -19,10 +19,10 @@ def get_class(x):
     elif isinstance(x, bool):      return true_class if x else false_class
     elif isinstance(x, num_types): return num_class
     elif isinstance(x, str_types): return string_class
-    elif x is None:                return nil_class
     elif isinstance(x, Block):     return block_class
     elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
     elif callable(x):              return primitive_method_class # TODO: define this
+    elif x is None:                return nil_class # TODO: define
     else:                          assert False
 
 str_types =  (str, unicode)
@@ -121,7 +121,7 @@ class LocalPut(namedtuple('_LocalPut', 'name expr')):
     def eval(self, receiver, env, k):
         return self.expr.eval(receiver, env, (putting_k, (self.name, env), k))
 
-def putting_k((name, thing), value, k):
+def putting_k(value, (name, thing), k):
     with_key(name, lambda: thing.put(name, value))
     return k, value
 
@@ -147,12 +147,12 @@ class Cascade(namedtuple('_Cascade', 'subject selector operands')):
         return self.subject.eval(receiver, env,
                                  (cascade_evrands_k, (self, receiver, env), k))
 
-def cascade_evrands_k((self, receiver, env), subject, k):
+def cascade_evrands_k(subject, (self, receiver, env), k):
     return evrands(self.operands, receiver, env,
                    (call_k, (subject, self),
                     (ignore_k, subject, k)))
 
-def ignore_k(result, _, k):
+def ignore_k(_, result, k):
     return k, result
 
 class Send(namedtuple('_Send', 'subject selector operands')):
@@ -160,11 +160,11 @@ class Send(namedtuple('_Send', 'subject selector operands')):
         return self.subject.eval(receiver, env,
                                  (evrands_k, (self, receiver, env), k))
 
-def evrands_k((self, receiver, env), subject, k):
+def evrands_k(subject, (self, receiver, env), k):
     return evrands(self.operands, receiver, env,
                    (call_k, (subject, self), k))
 
-def call_k((subject, self), args, k):
+def call_k(args, (subject, self), k):
     return call(subject, self.selector, args, k)
 
 def evrands(operands, receiver, env, k):
@@ -174,17 +174,17 @@ def evrands(operands, receiver, env, k):
         return operands[0].eval(receiver, env,
                                 (evrands_more_k, (operands[1:], receiver, env), k))
 
-def evrands_more_k((operands, receiver, env), val, k):
+def evrands_more_k(val, (operands, receiver, env), k):
     return evrands(operands, receiver, env, (evrands_cons_k, val, k))
 
-def evrands_cons_k(val, vals, k):
+def evrands_cons_k(vals, val, k):
     return k, (val,)+vals
 
 class Then(namedtuple('_Then', 'expr1 expr2')):
     def eval(self, receiver, env, k):
         return self.expr1.eval(receiver, env, (then_k, (self, receiver, env), k))
 
-def then_k((self, receiver, env), _, k):
+def then_k(_, (self, receiver, env), k):
     return self.expr2.eval(receiver, env, k)
 
 true_class = Class({'if-so:if-not:': Method(('trueBlock', 'falseBlock'), (),
@@ -215,7 +215,7 @@ def make(class_, k):
     return call(class_, 'new', (),
                 (make_new_k, None, k))
 
-def make_new_k(_, instance, k):
+def make_new_k(instance, _, k):
     return call(instance, 'init', (),
                 (ignore_k, instance, k))
 
@@ -229,7 +229,7 @@ eg_class = Class(dict(yay=eg_yay,
                       get_whee=eg_get_whee,
                       init_with=eg_init_with),
                  ('whee',))
-def eg_init_with_k(_, instance, k):
+def eg_init_with_k(instance, _, k):
     return call(instance, 'init_with', (42,),
                 (ignore_k, instance, k))
 eg = call(eg_class, 'new', (),
