@@ -119,10 +119,10 @@ class LocalGet(namedtuple('_LocalGet', 'name')):
 
 class LocalPut(namedtuple('_LocalPut', 'name expr')):
     def eval(self, receiver, env, k):
-        return self.expr.eval(receiver, env, (putting_k, (self, env), k))
+        return self.expr.eval(receiver, env, (putting_k, (self.name, env), k))
 
-def putting_k((self, env), value, k):
-    with_key(self.name, lambda: env.put(self.name, value))
+def putting_k((name, thing), value, k):
+    with_key(name, lambda: thing.put(name, value))
     return k, value
 
 class SlotGet(namedtuple('_SlotGet', 'name')):
@@ -132,12 +132,8 @@ class SlotGet(namedtuple('_SlotGet', 'name')):
 
 class SlotPut(namedtuple('_SlotPut', 'name expr')):
     def eval(self, receiver, env, k):
-        return self.expr.eval(receiver, env, (slot_put_k, (self, receiver, env), k))
-
-def slot_put_k((self, receiver, env), value, k):
-    with_key(self.name,
-             lambda: as_slottable(receiver).put(self.name, value))
-    return k, value
+        return self.expr.eval(receiver, env,
+                              (putting_k, (self.name, as_slottable(receiver)), k))
 
 def as_slottable(thing):
     if not isinstance(thing, Thing):
