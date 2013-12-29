@@ -71,7 +71,7 @@ mk_binary_header  = lambda selector, param: (selector, (param,))
 mk_keyword_header = lambda *args: (''.join(args[::2]), args[1::2])
 
 def mk_method((selector, params), localvars, expr):
-    return selector, terp.Method(params, localvars, expr)
+    return selector, terp.Method(terp.Code(params, localvars, expr))
 
 mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)

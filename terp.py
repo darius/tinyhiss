@@ -65,21 +65,17 @@ class Class(namedtuple('_Class', 'methods ivars')):
         return '<<Class %s | %s>>' % (' '.join(self.ivars),
                                       self.methods)
 
-def Method(params, local_vars, expr):
-    return Block(None, None, Code(params, local_vars, expr))
+class Method(namedtuple('_Method', 'code')):
+    def __call__(self, receiver, arguments, k):
+        return self.code.enter(receiver, arguments, None, k)
+    def __repr__(self):
+        return repr(self.code)
 
 class Block(namedtuple('_Block', 'receiver env code')):
-    def __call__(self, receiver, arguments, k):
-        rib = dict(zip(self.code.params, arguments))
-        for var in self.code.locals:
-            rib[var] = None
-        real_receiver = self.receiver or receiver
-        return self.code.expr.eval(real_receiver, Env(rib, self.env), k)
+    def __call__(self, _, arguments, k):
+        return self.code.enter(self.receiver, arguments, self.env, k)
     def __repr__(self):
-        if self.receiver is None and self.env is None:
-            return repr(self.code)
-        else:
-            return 'Block(%r, %r, %r)' % (self.receiver, self.env, self.code)
+        return 'Block(%r, %r, %r)' % (self.receiver, self.env, self.code)
 
 class Env(namedtuple('_Env', 'rib container')):
     def get(self, key):
@@ -132,6 +128,11 @@ class Constant(namedtuple('_Constant', 'value')):
 class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, receiver, env, k):
         return k, Block(receiver, env, self)
+    def enter(self, receiver, arguments, parent_env, k):
+        rib = dict(zip(self.params, arguments))
+        for name in self.locals:
+            rib[name] = None
+        return self.expr.eval(receiver, Env(rib, parent_env), k)
     def __repr__(self):
         params = ' '.join(':'+param for param in self.params)
         if params: params += ' | '
@@ -248,11 +249,11 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
 def then_k(_, (self, receiver, env), k):
     return self.expr2.eval(receiver, env, k)
 
-true_class = Class({'if-so:if-not:': Method(('trueBlock', 'falseBlock'), (),
-                                            Send(LocalGet('trueBlock'), 'value', ()))},
+true_class = Class({'if-so:if-not:': Method(Code(('trueBlock', 'falseBlock'), (),
+                                                 Send(LocalGet('trueBlock'), 'value', ())))},
                    ())
-false_class = Class({'if-so:if-not:': Method(('trueBlock', 'falseBlock'), (),
-                                             Send(LocalGet('falseBlock'), 'value', ()))},
+false_class = Class({'if-so:if-not:': Method(Code(('trueBlock', 'falseBlock'), (),
+                                                  Send(LocalGet('falseBlock'), 'value', ())))},
                     ())
 
 #global_env['Object'] = thing_class
@@ -280,12 +281,12 @@ def make_new_k(instance, _, k):
     return call(instance, 'init', (),
                 (ignore_k, instance, k))
 
-object_init = Method((), (), Self())
+object_init = Method(Code((), (), Self()))
 
-eg_init_with = Method(('value',), (), SlotPut('whee', LocalGet('value')))
-eg_get_whee = Method((), (), SlotGet('whee'))
+eg_init_with = Method(Code(('value',), (), SlotPut('whee', LocalGet('value'))))
+eg_get_whee = Method(Code((), (), SlotGet('whee')))
 eg_yay_body = Send(Send(Self(), 'get_whee', ()), '+', (LocalGet('x'),))
-eg_yay = Method(('x',), ('v',), eg_yay_body)
+eg_yay = Method(Code(('x',), ('v',), eg_yay_body))
 eg_class = Class(dict(yay=eg_yay,
                       get_whee=eg_get_whee,
                       init_with=eg_init_with),
@@ -300,10 +301,10 @@ eg_result = call(eg, 'yay', (137,), final_k)
 ## trampoline(eg_result)
 #. 179
 
-make_eg = Method((), (),
-                 Send(Cascade(Send(Constant(eg_class), 'new', ()),
-                              'init_with', (Constant(42),)),
-                      'yay', (Constant(137),)))
+make_eg = Method(Code((), (),
+                      Send(Cascade(Send(Constant(eg_class), 'new', ()),
+                                   'init_with', (Constant(42),)),
+                           'yay', (Constant(137),))))
 make_eg_result = make_eg(None, (), final_k)
 ## trampoline(make_eg_result)
 #. 179
@@ -317,12 +318,12 @@ factorial_body = Send(Send(LocalGet('n'), '=', (Constant(0),)),
                             Send(LocalGet('n'), '*',
                                  (Send(Self(), 'factorial:',
                                        (Send(LocalGet('n'), '-', (Constant(1),)),)),)))))
-factorial_class = Class({'factorial:': Method(('n',), (), factorial_body)},
+factorial_class = Class({'factorial:': Method(Code(('n',), (), factorial_body))},
                         ())
-factorial = Method((), (),
-                   Send(Send(Constant(factorial_class), 'new', ()),
-                        'factorial:',
-                        (Constant(5),)))
+factorial = Method(Code((), (),
+                        Send(Send(Constant(factorial_class), 'new', ()),
+                             'factorial:',
+                             (Constant(5),))))
 try_factorial = factorial(None, (), final_k)
 ## trampoline(try_factorial)
 #. 120
