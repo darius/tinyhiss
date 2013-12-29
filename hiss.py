@@ -19,7 +19,7 @@ def ensure_class(name, classes):
 
 def run(text, classes):
     block = parser.parse_code(text, classes)
-    return terp.trampoline(((block, None, terp.final_k), ()))
+    return terp.trampoline(block(None, (), terp.final_k))
 
 fact = """\
 factorial: n

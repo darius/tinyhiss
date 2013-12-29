@@ -243,7 +243,7 @@ make_eg = Method((), (),
                  Send(Cascade(Send(Constant(eg_class), 'new', ()),
                               'init_with', (Constant(42),)),
                       'yay', (Constant(137),)))
-make_eg_result = (make_eg, None, final_k), ()
+make_eg_result = make_eg(None, (), final_k)
 ## trampoline(make_eg_result)
 #. 179
 
@@ -262,7 +262,7 @@ factorial = Method((), (),
                    Send(Send(Constant(factorial_class), 'new', ()),
                         'factorial:',
                         (Constant(5),)))
-try_factorial = (factorial, None, final_k), ()
+try_factorial = factorial(None, (), final_k)
 ## trampoline(try_factorial)
 #. 120
 
