@@ -8,6 +8,7 @@ changes = open('changes.hiss', 'a')
 
 def add_method(class_name, text, classes):
     (selector, method), = parser.grammar.top_method(text)
+    method = terp.Method(text, method.code)
     ensure_class(class_name, classes).put_method(selector, method)
     changes.write(fileout.unparse1(class_name + ' ' + text) + '\n')
     changes.flush()
@@ -22,7 +23,7 @@ def run(text, env):
     return terp.trampoline(block.enter((), terp.final_k))
 
 def parse_block(text, env):
-    return terp.Block(None, env, parser.parse_code(text))
+    return terp.Block(text, env, parser.parse_code(text))
 
 fact = """\
 factorial: n
