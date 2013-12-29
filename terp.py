@@ -65,7 +65,10 @@ class Class(namedtuple('_Class', 'methods ivars')):
         return '<<Class %s | %s>>' % (' '.join(self.ivars),
                                       self.methods)
 
-class Method(namedtuple('_Method', 'code')):
+def make_method(params, locals, expr):
+    return Method(None, Code(params, locals, expr))
+
+class Method(namedtuple('_Method', 'source code')):
     def __call__(self, receiver, arguments, k):
         return self.code.enter(receiver, arguments, None, k)
     def __repr__(self):
@@ -249,11 +252,11 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
 def then_k(_, (self, receiver, env), k):
     return self.expr2.eval(receiver, env, k)
 
-true_class = Class({'if-so:if-not:': Method(Code(('trueBlock', 'falseBlock'), (),
-                                                 Send(LocalGet('trueBlock'), 'value', ())))},
+true_class = Class({'if-so:if-not:': make_method(('trueBlock', 'falseBlock'), (),
+                                                 Send(LocalGet('trueBlock'), 'value', ()))},
                    ())
-false_class = Class({'if-so:if-not:': Method(Code(('trueBlock', 'falseBlock'), (),
-                                                  Send(LocalGet('falseBlock'), 'value', ())))},
+false_class = Class({'if-so:if-not:': make_method(('trueBlock', 'falseBlock'), (),
+                                                  Send(LocalGet('falseBlock'), 'value', ()))},
                     ())
 
 #global_env['Object'] = thing_class
@@ -281,12 +284,12 @@ def make_new_k(instance, _, k):
     return call(instance, 'init', (),
                 (ignore_k, instance, k))
 
-object_init = Method(Code((), (), Self()))
+object_init = make_method((), (), Self())
 
-eg_init_with = Method(Code(('value',), (), SlotPut('whee', LocalGet('value'))))
-eg_get_whee = Method(Code((), (), SlotGet('whee')))
+eg_init_with = make_method(('value',), (), SlotPut('whee', LocalGet('value')))
+eg_get_whee = make_method((), (), SlotGet('whee'))
 eg_yay_body = Send(Send(Self(), 'get_whee', ()), '+', (LocalGet('x'),))
-eg_yay = Method(Code(('x',), ('v',), eg_yay_body))
+eg_yay = make_method(('x',), ('v',), eg_yay_body)
 eg_class = Class(dict(yay=eg_yay,
                       get_whee=eg_get_whee,
                       init_with=eg_init_with),
@@ -301,10 +304,10 @@ eg_result = call(eg, 'yay', (137,), final_k)
 ## trampoline(eg_result)
 #. 179
 
-make_eg = Method(Code((), (),
+make_eg = make_method((), (),
                       Send(Cascade(Send(Constant(eg_class), 'new', ()),
                                    'init_with', (Constant(42),)),
-                           'yay', (Constant(137),))))
+                           'yay', (Constant(137),)))
 make_eg_result = make_eg(None, (), final_k)
 ## trampoline(make_eg_result)
 #. 179
@@ -318,12 +321,12 @@ factorial_body = Send(Send(LocalGet('n'), '=', (Constant(0),)),
                             Send(LocalGet('n'), '*',
                                  (Send(Self(), 'factorial:',
                                        (Send(LocalGet('n'), '-', (Constant(1),)),)),)))))
-factorial_class = Class({'factorial:': Method(Code(('n',), (), factorial_body))},
+factorial_class = Class({'factorial:': make_method(('n',), (), factorial_body)},
                         ())
-factorial = Method(Code((), (),
+factorial = make_method((), (),
                         Send(Send(Constant(factorial_class), 'new', ()),
                              'factorial:',
-                             (Constant(5),))))
+                             (Constant(5),)))
 try_factorial = factorial(None, (), final_k)
 ## trampoline(try_factorial)
 #. 120
