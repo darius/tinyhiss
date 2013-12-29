@@ -19,7 +19,7 @@ def ensure_class(name, classes):
 
 def run(text, env):
     block = parse_block(text, env)
-    return terp.trampoline(block(None, (), terp.final_k))
+    return terp.trampoline(block.enter((), terp.final_k))
 
 def parse_block(text, env):
     return terp.Block(None, env, parser.parse_code(text))

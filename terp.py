@@ -75,7 +75,7 @@ class Method(namedtuple('_Method', 'source code')):
         return repr(self.code)
 
 class Block(namedtuple('_Block', 'receiver env code')):
-    def __call__(self, _, arguments, k):
+    def enter(self, arguments, k):
         return self.code.enter(self.receiver, arguments, self.env, k)
     def __repr__(self):
         return 'Block(%r, %r, %r)' % (self.receiver, self.env, self.code)
@@ -100,7 +100,7 @@ def new_method(receiver, arguments, k):
 
 class_class = Class(dict(new=new_method), ())
 
-block_class = Class(dict(value=lambda receiver, arguments, k: receiver(None, (), k)),
+block_class = Class(dict(value=lambda receiver, arguments, k: receiver.enter((), k)),
                     ())
 
 num_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
