@@ -180,6 +180,40 @@ def smalltalk_accept(buf):
         buf.insert('<<Unparsable>>')
 
 @bind('pgdn')
+def next_method(buf): visit_methods(buf)
+@bind('pgup')
+def next_method(buf): visit_methods(buf, reverse=True)
+
+def visit_methods(buf, reverse=False):
+    import parser, parson, terp
+    class_name, method_decl = buf.text.split(None, 1)
+    try:
+        class_ = terp.global_env[class_name]
+    except KeyError:
+        return
+    try:
+        (selector, _), = parser.grammar.method_header(method_decl)
+    except parson.Unparsable:
+        selector = None
+    selector, method = class_.next_method(selector, reverse)
+    if selector:
+        buf.text = class_name + ' ' + get_source(selector, method)
+        buf.point = 0           # XXX move to start of body, I guess
+
+def get_source(selector, method):
+    # XXX oh wow, ugly.
+    if hasattr(method, 'source'):
+        if method.source: return method.source
+    if ':' in selector:
+        head = ' '.join('%s: foo' % part
+                        for part in selector.split(':') if part)
+    elif selector[:1].isalnum():
+        head = selector
+    else:
+        head = selector + ' foo'
+    return head + '\n\n  <<primitive>>'
+
+@bind('end')                    # XXX a silly key for it
 def next_buffer(buf):
     global current_buffer
     i = all_buffers.index(buf)

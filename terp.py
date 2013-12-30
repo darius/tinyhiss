@@ -3,6 +3,7 @@ AST interpreter
 """
 
 from collections import namedtuple
+import itertools
 
 def trampoline(state):
 #    traceback(state)
@@ -58,6 +59,14 @@ class Class(namedtuple('_Class', 'methods ivars')):
         self.methods[selector] = method
     def make(self):
         return Thing(self, [None] * len(self.ivars))
+    def next_method(self, selector, reverse=False):
+        if selector not in self.methods:
+            name = next(iter(self.methods), None)
+        else:
+            keys = self.methods.keys()
+            if reverse: keys.reverse()
+            name = cyclic_next(selector, keys)
+        return (None, None) if name is None else (name, self.methods[name])
     def __repr__(self):
         for k, v in global_env.items():
             if self is v:
@@ -65,6 +74,13 @@ class Class(namedtuple('_Class', 'methods ivars')):
         return '<<Class %s | %s>>' % (' '.join(self.ivars),
                                       self.methods)
 
+def cyclic_next(key, lot):
+    it = itertools.cycle(lot)
+    for x in it:
+        if key == x:
+            result = next(it)
+            return result
+        
 def make_method(params, locals, expr):
     return Method(None, Code(params, locals, expr))
 
