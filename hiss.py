@@ -7,11 +7,14 @@ import fileout, parser, terp
 changes = open('changes.hiss', 'a')
 
 def add_method(class_name, text, classes):
+    raw_add_method(class_name, text, classes)
+    changes.write(fileout.unparse1(class_name + ' ' + text) + '\n')
+    changes.flush()
+
+def raw_add_method(class_name, text, classes):
     (selector, method), = parser.grammar.top_method(text)
     method = terp.Method(text, method.code)
     ensure_class(class_name, classes).put_method(selector, method)
-    changes.write(fileout.unparse1(class_name + ' ' + text) + '\n')
-    changes.flush()
 
 def ensure_class(name, classes):
     if name not in classes:
@@ -24,6 +27,17 @@ def run(text, env):
 
 def parse_block(text, env):
     return terp.Block(text, env, parser.parse_code(text))
+
+def startup():
+    for chunk in fileout.parse(open('changes.hiss').read().splitlines()):
+        load_chunk(chunk)
+
+def load_chunk(text):
+    class_name, method_decl = text.split(None, 1)
+    try:
+        raw_add_method(class_name, method_decl, terp.global_env)
+    except parson.Unparsable, exc:
+        sys.stderr.write('Failed to load chunk %r\n' % text.splitlines()[1])
 
 fact = """\
 factorial: n

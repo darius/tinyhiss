@@ -4,6 +4,7 @@ Hacked up from https://github.com/darius/sketchbook/tree/master/editor
 
 import os, sys, traceback
 import ansi
+import hiss, parser, parson, terp
 
 class Buffer(object):
 
@@ -146,7 +147,6 @@ def backward_move_line(buf): buf.move_line(-1)
 
 @bind(C('j'))
 def smalltalk_print_it(buf):
-    import hiss, terp
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
     # XXX hacky error-prone matching; move this to parser module
@@ -171,7 +171,6 @@ def format_exception((etype, value, tb), limit=None):
 
 @bind(M('a'))
 def smalltalk_accept(buf):
-    import hiss, parson, terp
     try:
         class_name, method_decl = buf.text.split(None, 1)
         hiss.add_method(class_name, method_decl, terp.global_env)
@@ -185,7 +184,6 @@ def next_method(buf): visit_methods(buf)
 def next_method(buf): visit_methods(buf, reverse=True)
 
 def visit_methods(buf, reverse=False):
-    import parser, parson, terp
     class_name, method_decl = buf.text.split(None, 1)
     try:
         class_ = terp.global_env[class_name]
@@ -235,6 +233,7 @@ def read_key():
     return keys.get(k, k)
 
 def main():
+    hiss.startup()
     os.system('stty raw -echo')
     try:
         sys.stdout.write(ansi.clear_screen)
