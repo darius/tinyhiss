@@ -15,7 +15,7 @@ class Buffer(object):
         self.point = 0
         self.origin = 0
         self.column = None
-        self.text = load(filename)
+        self.text = load(filename) if filename is not None else ''
 
     def save(self):
         open(self.filename, 'w').write(self.text)
@@ -258,7 +258,9 @@ def reacting():
 
 if __name__ == '__main__':
     ROWS, COLS = map(int, os.popen('stty size', 'r').read().split())
-    all_buffers = [Buffer(sys.argv[1], (COLS//2-1, ROWS), (0, 0)),
-                   Buffer(sys.argv[2], (COLS//2-1, ROWS), (COLS//2+1, 0))]
+    all_buffers = [Buffer(sys.argv[i+1] if i+1 < len(sys.argv) else None,
+                          (COLS//2-1, ROWS),
+                          (i*(COLS//2+1), 0))
+                   for i in range(2)]
     current_buffer = all_buffers[0]
     main()
