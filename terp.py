@@ -81,8 +81,8 @@ def cyclic_next(key, lot):
             result = next(it)
             return result
         
-def make_method(params, locals, expr):
-    return Method(None, Code(params, locals, expr))
+def make_method(params, locals, expr, source=None):
+    return Method(source, Code(params, locals, expr))
 
 class Method(namedtuple('_Method', 'source code')):
     def __call__(self, receiver, arguments, k):
@@ -268,11 +268,17 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
 def then_k(_, (self, receiver, env), k):
     return self.expr2.eval(receiver, env, k)
 
-true_class = Class({'if-so:if-not:': make_method(('trueBlock', 'falseBlock'), (),
-                                                 Send(LocalGet('trueBlock'), 'value', ()))},
+true_class = Class({'if-so:if-not:': make_method(('true-block', 'false-block'), (),
+                                                 Send(LocalGet('true-block'), 'value', ()),
+                                                 source="""\
+if-so: true-block if-not: false-block
+  true-block value""")},
                    ())
-false_class = Class({'if-so:if-not:': make_method(('trueBlock', 'falseBlock'), (),
-                                                  Send(LocalGet('falseBlock'), 'value', ()))},
+false_class = Class({'if-so:if-not:': make_method(('true-block', 'false-block'), (),
+                                                  Send(LocalGet('false-block'), 'value', ()),
+                                                 source="""\
+if-so: true-block if-not: false-block
+  false-block value""")},
                     ())
 
 #global_env['Object'] = thing_class
