@@ -171,8 +171,8 @@ def format_exception((etype, value, tb), limit=None):
 
 @bind(M('a'))
 def smalltalk_accept(buf):
+    class_name, method_decl = split2(buf.text)
     try:
-        class_name, method_decl = buf.text.split(None, 1)
         hiss.add_method(class_name, method_decl, terp.global_env)
     except parson.Unparsable, exc:
         buf.point = len(buf.text) - len(method_decl) + exc.position
@@ -184,7 +184,7 @@ def next_method(buf): visit_methods(buf)
 def next_method(buf): visit_methods(buf, reverse=True)
 
 def visit_methods(buf, reverse=False):
-    class_name, method_decl = buf.text.split(None, 1)
+    class_name, method_decl = split2(buf.text)
     try:
         class_ = terp.global_env[class_name]
     except KeyError:
@@ -197,6 +197,10 @@ def visit_methods(buf, reverse=False):
     if selector:
         buf.text = class_name + ' ' + get_source(selector, method)
         buf.point = 0           # XXX move to start of body, I guess
+
+def split2(text):
+    splits = text.split(None, 1)
+    return splits + [''] if len(splits) == 1 else splits
 
 def get_source(selector, method):
     # XXX oh wow, ugly.
