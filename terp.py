@@ -352,28 +352,3 @@ factorial = make_method((), (),
 try_factorial = factorial(None, (), final_k)
 ## trampoline(try_factorial)
 #. 120
-
-                  
-"""
-to do:
-- inheritance. actually traits instead.
-- Object class with default 'init', '=', etc.
-- reflection
-  - smalltalk access to instance vars of kernel classes
-    - none such for num_class, etc.
-  - PrimitiveMethod class
-  - smalltalk methods for methods of kernel classes
-    Thing get, put, get_class
-    Class get_method, make, get_instance_variables, get_superclass
-    Block __call__
-    Env get, put
-    <Expr> eval
-  - reify coninuations
-  - messageNotUnderstood
-  - other exception handling
-- strings
-- arrays
-- nonlocal return
-- exceptions
-- assignment
-"""
