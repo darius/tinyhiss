@@ -38,7 +38,7 @@ def get_class(x):
     elif x is None:                return nil_class # TODO: define
     else:                          assert False
 
-str_types =  (str, unicode)
+str_types = (str, unicode)
 num_types = (int, long, float)
 
 class Thing(namedtuple('_Thing', 'class_ data')):
