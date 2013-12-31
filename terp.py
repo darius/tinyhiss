@@ -43,13 +43,13 @@ num_types = (int, long, float)
 
 class Thing(namedtuple('_Thing', 'class_ data')):
     def get(self, key):
-        return self.data[self.class_.ivar_index[key]]
+        return self.data[self.class_.slot_index[key]]
     def put(self, key, value):
-        self.data[self.class_.ivar_index[key]] = value
+        self.data[self.class_.slot_index[key]] = value
 
-class Class(namedtuple('_Class', 'methods ivars')):
-    def __init__(self, methods, ivars):
-        self.ivar_index = dict(zip(ivars, range(len(ivars))))
+class Class(namedtuple('_Class', 'methods slots')):
+    def __init__(self, methods, slots):
+        self.slot_index = dict(zip(slots, range(len(slots))))
     def get_method(self, selector):
         try:
             return self.methods[selector]
@@ -58,7 +58,7 @@ class Class(namedtuple('_Class', 'methods ivars')):
     def put_method(self, selector, method):
         self.methods[selector] = method
     def make(self):
-        return Thing(self, [None] * len(self.ivars))
+        return Thing(self, [None] * len(self.slots))
     def next_method(self, selector, reverse=False):
         if selector not in self.methods:
             name = next(iter(self.methods), None)
@@ -71,7 +71,7 @@ class Class(namedtuple('_Class', 'methods ivars')):
         for k, v in global_env.items():
             if self is v:
                 return k
-        return '<<Class %s | %s>>' % (' '.join(self.ivars),
+        return '<<Class %s | %s>>' % (' '.join(self.slots),
                                       self.methods)
 
 def cyclic_next(key, lot):
