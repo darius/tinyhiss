@@ -8,7 +8,7 @@ changes = open('changes.hiss', 'a')
 
 def add_method(class_name, text, classes):
     raw_add_method(class_name, text, classes)
-    changes.write(fileout.unparse1(class_name + ' ' + text) + '\n')
+    changes.write(fileout.unparse1('+ ' + class_name + ' ' + text) + '\n')
     changes.flush()
 
 def raw_add_method(class_name, text, classes):
@@ -33,11 +33,19 @@ def startup():
         load_chunk(chunk)
 
 def load_chunk(text):
-    class_name, method_decl = text.split(None, 1)
-    try:
-        raw_add_method(class_name, method_decl, terp.global_env)
-    except parson.Unparsable, exc:
-        sys.stderr.write('Failed to load chunk %r\n' % text.splitlines()[1])
+    if text.startswith('+ '): # Method definition
+        _, class_name, method_decl = text.split(None, 2)
+        try:
+            raw_add_method(class_name, method_decl, terp.global_env)
+        except parson.Unparsable:
+            sys.stderr.write('Failed to load chunk %r\n' % text.splitlines()[1])
+    elif text.startswith('> '): # Command
+        try:
+            code = parse_block(text[2:], terp.global_env)
+        except parson.Unparsable, exc:
+            sys.stderr.write('Failed to run chunk %r\n' % text)
+    else:
+        raise Exception("Unknown chunk type", text)
 
 fact = """\
 factorial: n
