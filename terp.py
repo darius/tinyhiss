@@ -28,7 +28,7 @@ def call(receiver, selector, args, k):
     return get_class(receiver).get_method(selector)(receiver, args, k)
 
 def get_class(x):
-    if isinstance(x, Thing):       return x.class_
+    if   isinstance(x, Thing):     return x.class_
     elif isinstance(x, bool):      return true_class if x else false_class
     elif isinstance(x, num_types): return num_class
     elif isinstance(x, str_types): return string_class # TODO: define
