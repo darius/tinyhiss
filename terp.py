@@ -6,9 +6,9 @@ from collections import namedtuple
 import itertools
 
 def trampoline(state):
-#    traceback(state)
     k, value = state
     while k is not None:
+#        traceback((k, value))
         fn, free_var, k = k
         k, value = fn(value, free_var, k)
     return value
