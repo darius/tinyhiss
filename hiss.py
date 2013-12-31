@@ -38,12 +38,12 @@ def load_chunk(text):
         try:
             raw_add_method(class_name, method_decl, terp.global_env)
         except parson.Unparsable:
-            sys.stderr.write('Failed to load chunk %r\n' % text.splitlines()[1])
+            sys.stderr.write("Failed to load chunk %r\n" % text.splitlines()[1])
     elif text.startswith('> '): # Command
         try:
             code = parse_block(text[2:], terp.global_env)
         except parson.Unparsable, exc:
-            sys.stderr.write('Failed to run chunk %r\n' % text)
+            sys.stderr.write("Failed to run chunk %r\n" % text)
     else:
         raise Exception("Unknown chunk type", text)
 
