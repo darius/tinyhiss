@@ -8,7 +8,10 @@ changes = open('changes.hiss', 'a')
 
 def add_method(class_name, text, classes):
     raw_add_method(class_name, text, classes)
-    changes.write(fileout.unparse1('+ ' + class_name + ' ' + text) + '\n')
+    add_change('+', class_name + ' ' + text)
+
+def add_change(chunk_type, text):
+    changes.write(fileout.unparse1(chunk_type + ' ' + text) + '\n')
     changes.flush()
 
 def raw_add_method(class_name, text, classes):
@@ -46,6 +49,9 @@ def load_chunk(text):
             sys.stderr.write("Failed to run chunk %r\n" % text)
     else:
         raise Exception("Unknown chunk type", text)
+
+
+# Smoke test
 
 fact = """\
 factorial: n
