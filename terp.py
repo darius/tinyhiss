@@ -132,6 +132,17 @@ def as_number(thing):
         return thing
     assert False, "Not a number: %r" % (thing,)
 
+string_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_string(other)),
+                  '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
+                  '<': lambda rcvr, (other,), k: (k, rcvr < other),
+              }
+string_class = Class(string_methods, ())
+
+def as_string(thing):
+    if isinstance(thing, str_types):
+        return thing
+    assert False, "Not a string: %r" % (thing,)
+
 class Self(namedtuple('_Self', '')):
     def eval(self, receiver, env, k):
         return k, receiver
@@ -285,6 +296,7 @@ if-so: true-block if-not: false-block
 global_env['Class']  = class_class
 global_env['Block']  = block_class
 global_env['Number'] = num_class
+global_env['String'] = string_class
 global_env['False']  = false_class
 global_env['True']   = true_class
 
