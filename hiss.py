@@ -46,6 +46,11 @@ def load_chunk(text):
 
 
 def make_class_method(_, (name, slots), k):
+    result = raw_make_class_method(_, (name, slots), k)
+    add_change('>', 'Make-class raw-named: %r with-slots: %r' % (name, slots))
+    return result
+
+def raw_make_class_method(_, (name, slots), k):
     slot_tuple = tuple(slots.split()) # since we don't have Smalltalk arrays yet
     env = terp.global_env
     old = env.get(name)
@@ -55,10 +60,11 @@ def make_class_method(_, (name, slots), k):
         # XXX for now we're leaving old instances alone, and they share
         #  the method table. But their Thing data field ought to get updated
         #  consistent with the change to slots (as far as possible). 
-    add_change('>', 'Make-class named: %r with-slots: %r' % (name, slots))
     return k, name
 
-make_class_class = terp.Class({'named:with-slots:': make_class_method}, ())
+make_class_class = terp.Class({'named:with-slots:': make_class_method,
+                               'raw-named:with-slots:': raw_make_class_method},
+                              ())
 make_class = terp.Thing(make_class_class, ())
 
 terp.global_env['Make-class'] = make_class
@@ -73,7 +79,7 @@ factorial: n
     if-so: {1}
     if-not: {n * (I factorial: n - 1)}
 """
-## add_method('Factorial', fact, terp.global_env)
+## raw_add_method('Factorial', fact, terp.global_env)
 ## run("Factorial new factorial: 5", terp.global_env)
 #. 120
 
@@ -84,7 +90,7 @@ I = 0
     if-so: {1}
     if-not: {me * (me - 1) factorial}
 """
-## add_method('Number', fact2, terp.global_env)
+## raw_add_method('Number', fact2, terp.global_env)
 ## run("5 factorial", terp.global_env)
 #. 120
 
