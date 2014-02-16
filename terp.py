@@ -132,7 +132,9 @@ def as_number(thing):
         return thing
     assert False, "Not a number: %r" % (thing,)
 
-string_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_string(other)),
+string_methods = {'has:': lambda rcvr, (other,), k: (k, other in rcvr),
+                  'at:':  lambda rcvr, (i,), k: (k, rcvr[i]),
+                  '++': lambda rcvr, (other,), k: (k, rcvr + as_string(other)),
                   '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
                   '<': lambda rcvr, (other,), k: (k, rcvr < other),
               }
