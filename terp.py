@@ -61,9 +61,9 @@ class Class(namedtuple('_Class', 'methods slots')):
         return Thing(self, [None] * len(self.slots))
     def next_method(self, selector, reverse=False):
         if selector not in self.methods:
-            name = next(iter(self.methods), None)
+            name = min(self.methods or (None,))
         else:
-            keys = self.methods.keys()
+            keys = sorted(self.methods.keys())
             if reverse: keys.reverse()
             name = cyclic_next(selector, keys)
         return (None, None) if name is None else (name, self.methods[name])
