@@ -87,7 +87,7 @@ def mk_var_get(name):
     return terp.GlobalGet(name) if name[:1].isupper() else terp.LocalGet(name)
 
 def mk_local_put(name, expr):
-    assert not name[:1].isupper()
+    assert not name[:1].isupper(), "Local variables must be lowercase"
     return terp.LocalPut(name, expr)
 
 mk_block = terp.Code

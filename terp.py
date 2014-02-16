@@ -36,7 +36,7 @@ def get_class(x):
     elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
     elif callable(x):              return primitive_method_class # TODO: define this
     elif x is None:                return nil_class # TODO: define
-    else:                          assert False
+    else:                          assert False, "Classless datum"
 
 str_types = (str, unicode)
 num_types = (int, long, float)
