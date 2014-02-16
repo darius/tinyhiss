@@ -68,9 +68,8 @@ class Class(namedtuple('_Class', 'methods slots')):
             name = cyclic_next(selector, keys)
         return (None, None) if name is None else (name, self.methods[name])
     def __repr__(self):
-        for k, v in global_env.items():
-            if self is v:
-                return k
+        name = global_env.find_value(self)
+        if name is not None: return name
         return '<<Class %s | %s>>' % (' '.join(self.slots),
                                       self.methods)
 
@@ -97,6 +96,17 @@ class Block(namedtuple('_Block', 'receiver env code')):
         return 'Block(%r, %r, %r)' % (self.receiver, self.env, self.code)
 
 class Env(namedtuple('_Env', 'rib container')):
+    # The following two methods are meant only for the global env:
+    def adjoin(self, key, value):
+        assert self.container is None
+        self.rib[key] = value
+    def enter(self, key, default):
+        assert self.container is None
+        try:
+            return self.get(key)
+        except KeyError:
+            result = self.rib[key] = default
+            return result
     def get(self, key):
         return self.find(key)[key]
     def put(self, key, value):
@@ -108,6 +118,14 @@ class Env(namedtuple('_Env', 'rib container')):
             return self.container.find(key)
         else:
             raise KeyError(key)
+    def find_value(self, value):
+        for k, v in self.rib.items():
+            if value is v:
+                return k
+        if self.container is None:
+            return None
+        else:
+            return self.container.find_value(value)
     def __repr__(self):
         return 'Env(%r, %r)' % (self.rib, self.container)
 
@@ -179,7 +197,7 @@ def with_key(key, thunk):
 
 class GlobalGet(namedtuple('_GlobalGet', 'name')):
     def eval(self, receiver, env, k):
-        return with_key(self.name, lambda: (k, global_env[self.name]))
+        return with_key(self.name, lambda: (k, global_env.get(self.name)))
     def __repr__(self):
         return str(self.name)
 
@@ -218,7 +236,7 @@ def as_slottable(thing):
         raise KeyError
     return thing
     
-global_env = {}
+global_env = Env({}, None)
 
 class Cascade(namedtuple('_Cascade', 'subject selector operands')):
     def eval(self, receiver, env, k):
@@ -294,13 +312,13 @@ if-so: true-block if-not: false-block
   false-block value""")},
                     ())
 
-#global_env['Object'] = thing_class
-global_env['Class']  = class_class
-global_env['Block']  = block_class
-global_env['Number'] = num_class
-global_env['String'] = string_class
-global_env['False']  = false_class
-global_env['True']   = true_class
+#global_env.adjoin('Object', thing_class)
+global_env.adjoin('Class', class_class)
+global_env.adjoin('Block', block_class)
+global_env.adjoin('Number', num_class)
+global_env.adjoin('String', string_class)
+global_env.adjoin('False', false_class)
+global_env.adjoin('True', true_class)
 
 final_k = None
 

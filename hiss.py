@@ -22,9 +22,7 @@ def raw_add_method(class_name, text, classes):
     ensure_class(class_name, classes).put_method(selector, method)
 
 def ensure_class(name, classes):
-    if name not in classes:
-        classes[name] = terp.Class({}, ())
-    return classes[name]
+    return classes.enter(name, terp.Class({}, ()))
 
 def run(text, env):
     block = parse_block(text, env)
@@ -52,6 +50,18 @@ def load_chunk(text):
 
 def make_class_method(_, (name, slots), k):
     slot_tuple = tuple(slots.split()) # since we don't have Smalltalk arrays yet
+
+    genv = terp.global_env
+    old = ensure_class(name, genv)
+    if old.slots != slot_tuple:
+        old_methods = getattr(old, 'methods', {})
+        genv.adjoin(name, terp.Class(old_methods, slot_tuple))
+        # XXX for now we're leaving old instances alone, and they share
+        #  the method table. But their Thing data field ought to get updated
+        #  consistent with the change to slots (as far as possible). 
+    add_change('>', 'Make-class named: %r with-slots: %r' % (name, slots))
+    return k, name
+
     env = terp.global_env
     old = env.get(name)
     old_methods = getattr(old, 'methods', {})
@@ -66,7 +76,7 @@ def make_class_method(_, (name, slots), k):
 make_class_class = terp.Class({'named:with-slots:': make_class_method}, ())
 make_class = terp.Thing(make_class_class, ())
 
-terp.global_env['Make-class'] = make_class
+terp.global_env.adjoin('Make-class', make_class)
 
 
 # Smoke test

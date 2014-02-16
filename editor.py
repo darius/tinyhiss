@@ -189,7 +189,7 @@ def next_method(buf): visit_methods(buf, reverse=True)
 def visit_methods(buf, reverse=False):
     class_name, method_decl = split2(buf.text)
     try:
-        class_ = terp.global_env[class_name]
+        class_ = terp.global_env.get(class_name)
     except KeyError:
         return
     try:
