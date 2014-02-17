@@ -29,6 +29,7 @@ def run(text, env):
     return terp.trampoline(block.enter((), terp.final_k))
 
 def parse_block(text, env):
+    # XXX why is text the receiver? what was I thinking?
     return terp.Block(text, env, parser.parse_code(text))
 
 def startup():

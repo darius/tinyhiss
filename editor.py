@@ -148,6 +148,17 @@ def forward_move_line(buf): buf.move_line(1)
 @bind('up')
 def backward_move_line(buf): buf.move_line(-1)
 
+workspace_env = terp.Env({}, terp.global_env)
+
+def workspace_run(text):
+    code = parser.parse_code(text)
+    if isinstance(code.expr, terp.Constant) and code.expr.value is None:
+        # Special case to add variables to the workspace. I know, yuck.
+        for var in code.locals:
+            workspace_env.enter(var, None)
+    block = terp.Block(text, workspace_env, code) # XXX redundant with hiss.run()
+    return terp.trampoline(block.enter((), terp.final_k))
+
 @bind(C('j'))
 def smalltalk_print_it(buf):
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
@@ -158,7 +169,7 @@ def smalltalk_print_it(buf):
     if old_result == -1: old_result = eol
     try:
         comment = '-->'
-        result = repr(hiss.run(line, terp.global_env))
+        result = repr(workspace_run(line))
     except:
         comment = '--|'
         if False:               # Set to True for tracebacks

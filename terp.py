@@ -96,12 +96,11 @@ class Block(namedtuple('_Block', 'receiver env code')):
         return 'Block(%r, %r, %r)' % (self.receiver, self.env, self.code)
 
 class Env(namedtuple('_Env', 'rib container')):
-    # The following two methods are meant only for the global env:
+    # The following two methods are meant only for the global env and
+    # the workspace:
     def adjoin(self, key, value):
-        assert self.container is None
         self.rib[key] = value
-    def enter(self, key, default):
-        assert self.container is None
+    def enter(self, key, default): # XXX rename this method
         try:
             return self.get(key)
         except KeyError:
