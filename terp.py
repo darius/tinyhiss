@@ -36,6 +36,7 @@ def get_class(x):
     elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
     elif callable(x):              return primitive_method_class # TODO: define this
     elif x is None:                return nil_class # TODO: define
+    elif isinstance(x, list):      return array_class
     else:                          assert False, "Classless datum"
 
 str_types = (str, unicode)
@@ -46,6 +47,9 @@ class Thing(namedtuple('_Thing', 'class_ data')):
         return self.data[self.class_.slot_index[key]]
     def put(self, key, value):
         self.data[self.class_.slot_index[key]] = value
+    def __repr__(self):
+        return '%r(%s)' % (self.class_,
+                           ', '.join(map(repr, self.data)))
 
 class Class(namedtuple('_Class', 'methods slots')):
     def __init__(self, methods, slots):
@@ -149,18 +153,46 @@ def as_number(thing):
         return thing
     assert False, "Not a number: %r" % (thing,)
 
-string_methods = {'has:': lambda rcvr, (other,), k: (k, other in rcvr),
-                  'at:':  lambda rcvr, (i,), k: (k, rcvr[i]),
-                  '++': lambda rcvr, (other,), k: (k, rcvr + as_string(other)),
-                  '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
-                  '<': lambda rcvr, (other,), k: (k, rcvr < other),
-              }
-string_class = Class(string_methods, ())
+def find_default(rcvr, (other, default), k):
+    try:
+        return k, rcvr.index(other)
+    except ValueError:
+        return call(default, 'value', (), k)
+
+def has(rcvr, (other,), k):  return (k, other in rcvr)
+def at(rcvr, (i,), k):       return (k, rcvr[i])
+def find(rcvr, (other,), k): return (k, rcvr.index(other))
+def size(rcvr, _, k):        return (k, len(rcvr))
+def add(rcvr, (other,), k):  return (k, rcvr + other)
+def eq(rcvr, (other,), k):   return (k, rcvr == other)
+def lt(rcvr, (other,), k):   return (k, rcvr < other)
 
 def as_string(thing):
     if isinstance(thing, str_types):
         return thing
     assert False, "Not a string: %r" % (thing,)
+
+string_methods = {'has:':  has,
+                  'at:':   at,
+                  'find:': find,
+                  'find:default:': find_default,
+                  'size':  size,
+                  '++':    add,
+                  '=':     eq,
+                  '<':     lt,
+              }
+string_class = Class(string_methods, ())
+
+array_methods = {'has:':  has,
+                 'at:':   at,
+                 'find:': find,
+                 'find:default:': find_default,
+                 'size':  size,
+                 '++':    add,
+                 '=':     eq,
+                 '<':     lt,
+              }
+array_class = Class(array_methods, ())
 
 class Self(namedtuple('_Self', '')):
     def eval(self, receiver, env, k):
@@ -312,12 +344,13 @@ if-so: true-block if-not: false-block
                     ())
 
 #global_env.adjoin('Object', thing_class)
-global_env.adjoin('Class', class_class)
-global_env.adjoin('Block', block_class)
+global_env.adjoin('Class',  class_class)
+global_env.adjoin('Block',  block_class)
 global_env.adjoin('Number', num_class)
 global_env.adjoin('String', string_class)
-global_env.adjoin('False', false_class)
-global_env.adjoin('True', true_class)
+global_env.adjoin('False',  false_class)
+global_env.adjoin('True',   true_class)
+global_env.adjoin('Array',  array_class)
 
 final_k = None
 
