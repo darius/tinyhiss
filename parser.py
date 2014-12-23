@@ -6,53 +6,53 @@ from parson import Grammar, hug, join
 import terp
 
 grammar_text = r"""
-top_code = _ code ~/./.
-top_method = method_decl ~/./.
+top_code:    _ code ~/./.
+top_method:  method_decl ~/./.
 
-method_decl = method_header code :mk_method.
-method_header = unary_selector :mk_unary_header
-              | binary_selector name :mk_binary_header
-              | (keyword name)+ :mk_keyword_header.
+method_decl:    method_header code :mk_method.
+method_header:  unary_selector :mk_unary_header
+             |  binary_selector name :mk_binary_header
+             |  (keyword name)+ :mk_keyword_header.
 
-unary_selector = id ~':' _.
-binary_selector = /([~!@%&*\-+=|\\<>,?\/]+)/_.
-keyword = id /(:)/_ :join.
+unary_selector:   id ~':' _.
+binary_selector:  /([~!@%&*\-+=|\\<>,?\/]+)/_.
+keyword:  id /(:)/_ :join.
 
-code = locals? :hug opt_stmts.
-locals = '|'_ name* '|'_.
-opt_stmts = stmts | :mk_nil.
-stmts = stmt ('.'_ stmt :mk_then)* ('.'_)?.
+code:  locals? :hug opt_stmts.
+locals:  '|'_ name* '|'_.
+opt_stmts:  stmts | :mk_nil.
+stmts:  stmt ('.'_ stmt :mk_then)* ('.'_)?.
 
-stmt = 'my'__ name ':='_ expr :mk_slot_put
-     |        name ':='_ expr :mk_local_put
-     | '^'_ expr :mk_return
-     | expr.
+stmt:  'my'__ name ':='_ expr :mk_slot_put
+    |         name ':='_ expr :mk_local_put
+    |  '^'_ expr :mk_return
+    |  expr.
 
-expr = operand (m1 :mk_send (';'_ m1 :mk_cascade)*)?.
-m1 = unary_selector m1? :mk_m1 | m2.
-e1 = operand (unary_selector :mk_e1)*.
-m2 = binary_selector e1 m2? :mk_m2 | m3.
-e2 = e1 (binary_selector e1 :mk_e2)*.
-m3 = (keyword e2)+ :mk_m3.
+expr:  operand (m1 :mk_send (';'_ m1 :mk_cascade)*)?.
+m1:    unary_selector m1? :mk_m1 | m2.
+e1:    operand (unary_selector :mk_e1)*.
+m2:    binary_selector e1 m2? :mk_m2 | m3.
+e2:    e1 (binary_selector e1 :mk_e2)*.
+m3:    (keyword e2)+ :mk_m3.
 
-operand = block
-        | 'nil'   ~idchar _  :mk_nil
-        | 'false' ~idchar _  :mk_false
-        | 'true'  ~idchar _  :mk_true
-        | 'I'     ~idchar _  :mk_self
-        | 'me'    ~idchar _  :mk_self
-        | 'my'__ name        :mk_slot_get
-        | name               :mk_var_get
-        | /-?(\d+)/_         :mk_int  # XXX add base-r literals, floats, and scaled decimals
-        | string_literal     :mk_string
-        | '('_ stmt ')'_.
+operand:  block
+       |  'nil'   ~idchar _  :mk_nil
+       |  'false' ~idchar _  :mk_false
+       |  'true'  ~idchar _  :mk_true
+       |  'I'     ~idchar _  :mk_self
+       |  'me'    ~idchar _  :mk_self
+       |  'my'__ name        :mk_slot_get
+       |  name               :mk_var_get
+       |  /-?(\d+)/_         :mk_int  # XXX add base-r literals, floats, and scaled decimals
+       |  string_literal     :mk_string
+       |  '('_ stmt ')'_.
 
-reserved = /nil|false|true|I|me|my/ ~idchar.
+reserved:  /nil|false|true|I|me|my/ ~idchar.
 
-block = '{'_ block_args? :hug code '}'_ :mk_block.
-block_args = (':'_ name)* '|'_.
+block:  '{'_ block_args? :hug code '}'_ :mk_block.
+block_args:  (':'_ name)* '|'_.
 
-string_literal = /'/ qchar* /'/_  :join.
+string_literal:  /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
 name = ~reserved id _.
