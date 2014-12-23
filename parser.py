@@ -62,7 +62,7 @@ idchar = /[_A-Za-z0-9-]/.
 
 __ = whitespace+.
 _ = whitespace*.
-whitespace = (/\s/ | comment).
+whitespace = /\s/ | comment.
 comment = /--[>|\s][^\n]*/.
 """
 
