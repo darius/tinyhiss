@@ -61,7 +61,7 @@ id = /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
 idchar = /[_A-Za-z0-9-]/.
 
 __ = whitespace+.
-_ = whitespace*.
+_  = whitespace*.
 whitespace = /\s/ | comment.
 comment = /--[>|\s][^\n]*/.
 """
