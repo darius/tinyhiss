@@ -6,15 +6,15 @@ from parson import Grammar, hug, join
 import terp
 
 grammar_text = r"""
-top_code:    _ code ~/./.
-top_method:  method_decl ~/./.
+top_code:    _ code !/./.
+top_method:  method_decl !/./.
 
 method_decl:    method_header code :mk_method.
 method_header:  unary_selector :mk_unary_header
              |  binary_selector name :mk_binary_header
              |  (keyword name)+ :mk_keyword_header.
 
-unary_selector:   id ~':' _.
+unary_selector:   id !':' _.
 binary_selector:  /([~!@%&*\-+=|\\<>,?\/]+)/_.
 keyword:  id /(:)/_ :join.
 
@@ -36,18 +36,18 @@ e2:    e1 (binary_selector e1 :mk_e2)*.
 m3:    (keyword e2)+ :mk_m3.
 
 operand:  block
-       |  'nil'   ~idchar _  :mk_nil
-       |  'false' ~idchar _  :mk_false
-       |  'true'  ~idchar _  :mk_true
-       |  'I'     ~idchar _  :mk_self
-       |  'me'    ~idchar _  :mk_self
+       |  'nil'   !idchar _  :mk_nil
+       |  'false' !idchar _  :mk_false
+       |  'true'  !idchar _  :mk_true
+       |  'I'     !idchar _  :mk_self
+       |  'me'    !idchar _  :mk_self
        |  'my'__ name        :mk_slot_get
        |  name               :mk_var_get
        |  /-?(\d+)/_         :mk_int  # XXX add base-r literals, floats, and scaled decimals
        |  string_literal     :mk_string
        |  '('_ stmt ')'_.
 
-reserved:  /nil|false|true|I|me|my/ ~idchar.
+reserved:  /nil|false|true|I|me|my/ !idchar.
 
 block:  '{'_ block_args? :hug code '}'_ :mk_block.
 block_args:  (':'_ name)* '|'_.
@@ -55,7 +55,7 @@ block_args:  (':'_ name)* '|'_.
 string_literal:  /'/ qchar* /'/_  :join.
 qchar = /'(')/ | /([^'])/.
 
-name = ~reserved id _.
+name = !reserved id _.
 
 id = /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
 idchar = /[_A-Za-z0-9-]/.
