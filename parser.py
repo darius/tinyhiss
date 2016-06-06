@@ -2,7 +2,7 @@
 Based on http://chronos-st.blogspot.com/2007/12/smalltalk-in-one-page.html
 """
 
-from parson import Grammar, hug, join
+from parson import Grammar
 import terp
 
 grammar_text = r"""
