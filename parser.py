@@ -6,8 +6,8 @@ from parson import Grammar
 import terp
 
 grammar_text = r"""
-top_code:    _ code !/./.
-top_method:  method_decl !/./.
+top_code:    _ code :end.
+top_method:  method_decl :end.
 
 method_decl:    method_header code :mk_method.
 method_header:  unary_selector :mk_unary_header
