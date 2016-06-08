@@ -53,17 +53,17 @@ block:  '{'_ block_args? :hug code '}'_ :mk_block.
 block_args:  (':'_ name)* '|'_.
 
 string_literal:  /'/ qchar* /'/_  :join.
-qchar = /'(')/ | /([^'])/.
+qchar:  /'(')/ | /([^'])/.
 
-name = !reserved id _.
+name:  !reserved id _.
 
-id = /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
-idchar = /[_A-Za-z0-9-]/.
+id:  /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
+idchar:  /[_A-Za-z0-9-]/.
 
-__ = whitespace+.
-_  = whitespace*.
-whitespace = /\s/ | comment.
-comment = /--[>|\s][^\n]*/.
+__:  whitespace+.
+_:   whitespace*.
+whitespace:  /\s/ | comment.
+comment:  /--[>|\s][^\n]*/.
 """
 
 mk_unary_header   = lambda selector: (selector, ())
