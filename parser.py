@@ -8,8 +8,7 @@ import terp
 # This is an unusual grammar in that Parson's "keyword" syntax would
 # do the wrong thing, because identifiers can include dashes. Instead
 # we use negative lookahead rather often, and disable fnords with ~:
-# rather often. Parson's fnorded whitespace doesn't make this grammar
-# much cleaner, overall, than explicit whitespace tokens would.
+# rather often.
 grammar_text = r"""
 top_code    :  '' code :end.
 top_method  :  method_decl :end.
@@ -44,9 +43,12 @@ operand     :  block
             |  reserved
             |  my name            :mk_slot_get
             |  name               :mk_var_get
-            |  /-?(\d+)/          :mk_int  # XXX add base-r literals, floats, and scaled decimals
+            |  /-?(\d+)/          :mk_int  # TODO add base-r literals, floats, and scaled decimals
             |  string_literal     :mk_string
             |  '(' stmt ')'.
+
+block       :  '{' block_args? :hug code '}' :mk_block.
+block_args  :  (':' name)* '|'.
 
 reserved   ~:  'nil'   !idchar _  :mk_nil
             |  'false' !idchar _  :mk_false
@@ -55,9 +57,6 @@ reserved   ~:  'nil'   !idchar _  :mk_nil
             |  'me'    !idchar _  :mk_self.
 
 my         ~:  'my' whitespace+.
-
-block       :  '{' block_args? :hug code '}' :mk_block.
-block_args  :  (':' name)* '|'.
 
 name       ~:  !(reserved | 'my' !idchar) id _.
 
