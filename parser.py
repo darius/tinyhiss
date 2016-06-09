@@ -5,65 +5,74 @@ Based on http://chronos-st.blogspot.com/2007/12/smalltalk-in-one-page.html
 from parson import Grammar
 import terp
 
+# This is an unusual grammar in that Parson's "keyword" syntax would
+# do the wrong thing, because identifiers can include dashes. Instead
+# we use negative lookahead rather often, and disable fnords with ~:
+# rather often. Parson's fnorded whitespace doesn't make this grammar
+# much cleaner, overall, than explicit whitespace tokens would.
 grammar_text = r"""
-top_code:    _ code :end.
-top_method:  method_decl :end.
+top_code    :  '' code :end.
+top_method  :  method_decl :end.
 
-method_decl:    method_header code :mk_method.
-method_header:  unary_selector :mk_unary_header
-             |  binary_selector name :mk_binary_header
-             |  (keyword name)+ :mk_keyword_header.
+method_decl :  method_header code :mk_method.
+method_header: unary_selector :mk_unary_header
+            |  binary_selector name :mk_binary_header
+            |  (keyword name)+ :mk_keyword_header.
 
-unary_selector:   id !':' _.
-binary_selector:  /([~!@%&*\-+=|\\<>,?\/]+)/_.
-keyword:  id /(:)/_ :join.
+keyword         :  id /(:)/ :join.
+unary_selector ~:  id !':' _.
+binary_selector :  /([~!@%&*\-+=|\\<>,?\/]+)/.
 
-code:  locals? :hug opt_stmts.
-locals:  '|'_ name* '|'_.
-opt_stmts:  stmts | :mk_nil.
-stmts:  stmt ('.'_ stmt :mk_then)* ('.'_)?.
+code        :  locals? :hug opt_stmts.
+locals      :  '|' name* '|'.
+opt_stmts   :  stmts | :mk_nil.
+stmts       :  stmt ('.' stmt :mk_then)* '.'?.
 
-stmt:  'my'__ name ':='_ expr :mk_slot_put
-    |         name ':='_ expr :mk_local_put
-    |  '^'_ expr :mk_return
-    |  expr.
+stmt        :  my name ':=' expr :mk_slot_put
+            |     name ':=' expr :mk_local_put
+            |  '^' expr :mk_return
+            |  expr.
 
-expr:  operand (m1 :mk_send (';'_ m1 :mk_cascade)*)?.
-m1:    unary_selector m1? :mk_m1 | m2.
-e1:    operand (unary_selector :mk_e1)*.
-m2:    binary_selector e1 m2? :mk_m2 | m3.
-e2:    e1 (binary_selector e1 :mk_e2)*.
-m3:    (keyword e2)+ :mk_m3.
+expr        :  operand (m1 :mk_send (';' m1 :mk_cascade)*)?.
+m1          :  unary_selector m1? :mk_m1 | m2.
+e1          :  operand (unary_selector :mk_e1)*.
+m2          :  binary_selector e1 m2? :mk_m2 | m3.
+e2          :  e1 (binary_selector e1 :mk_e2)*.
+m3          :  (keyword e2)+ :mk_m3.
 
-operand:  block
-       |  'nil'   !idchar _  :mk_nil
-       |  'false' !idchar _  :mk_false
-       |  'true'  !idchar _  :mk_true
-       |  'I'     !idchar _  :mk_self
-       |  'me'    !idchar _  :mk_self
-       |  'my'__ name        :mk_slot_get
-       |  name               :mk_var_get
-       |  /-?(\d+)/_         :mk_int  # XXX add base-r literals, floats, and scaled decimals
-       |  string_literal     :mk_string
-       |  '('_ stmt ')'_.
+operand     :  block
+            |  reserved
+            |  my name            :mk_slot_get
+            |  name               :mk_var_get
+            |  /-?(\d+)/          :mk_int  # XXX add base-r literals, floats, and scaled decimals
+            |  string_literal     :mk_string
+            |  '(' stmt ')'.
 
-reserved:  /nil|false|true|I|me|my/ !idchar.
+reserved   ~:  'nil'   !idchar _  :mk_nil
+            |  'false' !idchar _  :mk_false
+            |  'true'  !idchar _  :mk_true
+            |  'I'     !idchar _  :mk_self
+            |  'me'    !idchar _  :mk_self.
 
-block:  '{'_ block_args? :hug code '}'_ :mk_block.
-block_args:  (':'_ name)* '|'_.
+my         ~:  'my' whitespace+.
 
-string_literal:  /'/ qchar* /'/_  :join.
-qchar:  /'(')/ | /([^'])/.
+block       :  '{' block_args? :hug code '}' :mk_block.
+block_args  :  (':' name)* '|'.
 
-name:  !reserved id _.
+name       ~:  !(reserved | 'my' !idchar) id _.
 
-id:  /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
-idchar:  /[_A-Za-z0-9-]/.
+id         ~:  /([A-Za-z][_A-Za-z0-9-]*)/.   # XXX could restrict the dashes some more
+idchar     ~:           /[_A-Za-z0-9-]/.
 
-__:  whitespace+.
-_:   whitespace*.
-whitespace:  /\s/ | comment.
-comment:  /--[>|\s][^\n]*/.
+string_literal
+           ~:  /'/ qchar* /'/ _  :join.
+qchar      ~:  /'(')/ | /([^'])/.
+
+_          ~:  whitespace*.
+whitespace ~:  /\s/ | comment.
+comment    ~:  /--[>|\s][^\n]*/.
+
+FNORD      ~:  whitespace*.
 """
 
 mk_unary_header   = lambda selector: (selector, ())
