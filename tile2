@@ -1,0 +1,5 @@
+Number factorial
+
+me = 0 
+	if-so: {1}
+	if-not: {me * (me - 1) factorial}

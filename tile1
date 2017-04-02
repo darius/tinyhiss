@@ -1,0 +1,41 @@
+Hello from my silly toy Smalltalk! Here's what you can do:
+
+Position the cursor on a line of code like
+
+   2 + 3
+
+and enter Control-j (spelled C-j from now on). You should get back the
+answer, 5. Edit the code and C-j it again, and the answer will change.
+
+Now you could enter C-q to quit without saving your edits, or C-x to 
+exit after saving.
+
+Are you back? Great. Now let's edit a Smalltalk method. Press the 'End' key
+to go edit in the other window tile to the right. (The cursor should appear
+there now.) Press it again and you're back here on the left. OK? OK, go back
+to the method pane on the right. The first line should start with the name
+of a Smalltalk class. If you press the 'Page Up' or 'Page Down' key, that
+cycles the pane to the next or previous method of that class. Find a method
+you want to change, then edit it, then press Alt-a (spelled M-a from now on).
+This will compile the new method into the class, or else complain with an
+error message from the compiler.
+
+(This editor supports just a few Emacs keybindings: the arrow keys, backspace,
+C-f and C-b. Yes, it sucks.)
+
+If you'd rather create a new method, then enter its selector in the first 
+line, replacing the selector of whatever method is currently there. For
+instance, make it
+
+Number squared
+
+    me * me
+
+Once that's compiled, then
+
+    5 squared
+
+should yield 25.
+
+Any of these actions work in either window tile. I only suggested moving
+over to the one on the right in order to preserve these instructions here.
