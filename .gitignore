@@ -1,5 +1,7 @@
 *.py[cod]
 
+changes.hiss
+
 # C extensions
 *.so
 
