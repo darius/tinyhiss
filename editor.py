@@ -236,11 +236,17 @@ def next_buffer(buf):
     i = all_buffers.index(buf)
     current_buffer = all_buffers[(i+1) % len(all_buffers)]
 
-keys = {esc+'[1~': 'home',  esc+'[A': 'up',    esc+'OA': 'up',
-        esc+'[3~': 'del',   esc+'[B': 'down',  esc+'OB': 'down',
-        esc+'[4~': 'end',   esc+'[C': 'right', esc+'OC': 'right',
-        esc+'[5~': 'pgup',  esc+'[D': 'left',  esc+'OD': 'left',
-        esc+'[6~': 'pgdn'}
+keys = {
+    esc+'[1~': 'home',
+    esc+'[3~': 'del',
+    esc+'[4~': 'end',  esc+'[F': 'end',
+    esc+'[5~': 'pgup',
+    esc+'[6~': 'pgdn',
+    esc+'[A': 'up',    esc+'OA': 'up',
+    esc+'[B': 'down',  esc+'OB': 'down',
+    esc+'[C': 'right', esc+'OC': 'right',
+    esc+'[D': 'left',  esc+'OD': 'left',
+}
 key_prefixes = set(k[:i] for k in keys for i in range(1, len(k)))
 
 def read_key():
