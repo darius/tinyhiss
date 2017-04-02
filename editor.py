@@ -21,7 +21,8 @@ class Buffer(object):
         if self.filename is None:
             print 'Not saving\r'
         else:
-            open(self.filename, 'w').write(self.text)
+            with open(self.filename, 'w') as f:
+                f.write(self.text)
 
     def move_char(self, d):
         self.point = max(0, min(self.point + d, len(self.text)))

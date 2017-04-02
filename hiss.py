@@ -35,7 +35,9 @@ def parse_block(text, env):
 def startup():
     global saving_changes
     saving_changes = False
-    for chunk in fileout.parse(open('changes.hiss').read().splitlines()):
+    with open('changes.hiss') as f:
+        changes = f.read()
+    for chunk in fileout.parse(changes.splitlines()):
         load_chunk(chunk)
     saving_changes = True
 
