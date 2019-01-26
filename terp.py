@@ -31,7 +31,7 @@ def get_class(x):
     if   isinstance(x, Thing):     return x.class_
     elif isinstance(x, bool):      return true_class if x else false_class
     elif isinstance(x, num_types): return num_class
-    elif isinstance(x, str_types): return string_class # TODO: define
+    elif isinstance(x, str_types): return string_class
     elif isinstance(x, Block):     return block_class
     elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
     elif callable(x):              return primitive_method_class # TODO: define this
