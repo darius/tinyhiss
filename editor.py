@@ -7,7 +7,11 @@ import ansi
 import hiss, parser, parson, terp
 
 class Buffer(object):
+    "A pane of editable text on screen."
 
+    # filename: source/destination of the text to edit, or None.
+    # extent:   (cols, rows) size of the pane.
+    # top_left: (x, y) coordinates of the top-left of the pane.
     def __init__(self, filename, extent, top_left):
         self.filename = filename
         self.extent = extent
@@ -40,9 +44,9 @@ class Buffer(object):
                 nl = self.end_of_line(p)
                 if nl == len(self.text): break
                 p = nl + 1
-        eol = self.text.find('\n', p)
+        eol = self.end_of_line(p)
         # XXX step forward until current column == column -- could be different
-        self.point = min(p + self.column, (eol if eol != -1 else len(self.text)))
+        self.point = min(p + self.column, eol)
 
     def start_of_line(self, p):
         return self.text.rfind('\n', 0, p) + 1
@@ -218,17 +222,20 @@ def split2(text):
     return splits + [''] if len(splits) == 1 else splits
 
 def get_source(selector, method):
-    # XXX oh wow, ugly.
+    # Ugly logic because the 'method' may be primitive (just a Python
+    # function, with no Smalltalk source).
     if hasattr(method, 'source'):
         if method.source: return method.source
+    return head_from_selector(selector) + '\n\n  <<primitive>>'
+
+def head_from_selector(selector):
     if ':' in selector:
-        head = ' '.join('%s: foo' % part
+        return ' '.join('%s: foo' % part
                         for part in selector.split(':') if part)
     elif selector[:1].isalnum():
-        head = selector
+        return selector
     else:
-        head = selector + ' foo'
-    return head + '\n\n  <<primitive>>'
+        return selector + ' foo'
 
 @bind('end')                    # XXX a silly key for it
 def next_buffer(buf):
