@@ -7,6 +7,24 @@ import fileout, parser, terp
 saving_changes = False
 changes = open('changes.hiss', 'a')
 
+def startup():
+    global saving_changes
+    saving_changes = False
+    with open('changes.hiss') as f:
+        changes = f.read()
+    for chunk in fileout.parse(changes.splitlines()):
+        load_chunk(chunk)
+    saving_changes = True
+
+def load_chunk(text):
+    if text.startswith('+ '): # Method definition
+        _, class_name, method_decl = text.split(None, 2)
+        raw_add_method(class_name, method_decl, terp.global_env)
+    elif text.startswith('> '): # Command
+        run(text[2:], terp.global_env)
+    else:
+        raise Exception("Unknown chunk type", text)
+
 def add_change(chunk_type, text):
     if saving_changes:
         changes.write(fileout.unparse1(chunk_type + ' ' + text) + '\n')
@@ -31,24 +49,6 @@ def run(text, env):
 def parse_block(text, env):
     # XXX why is text the receiver? what was I thinking?
     return terp.Block(text, env, parser.parse_code(text))
-
-def startup():
-    global saving_changes
-    saving_changes = False
-    with open('changes.hiss') as f:
-        changes = f.read()
-    for chunk in fileout.parse(changes.splitlines()):
-        load_chunk(chunk)
-    saving_changes = True
-
-def load_chunk(text):
-    if text.startswith('+ '): # Method definition
-        _, class_name, method_decl = text.split(None, 2)
-        raw_add_method(class_name, method_decl, terp.global_env)
-    elif text.startswith('> '): # Command
-        run(text[2:], terp.global_env)
-    else:
-        raise Exception("Unknown chunk type", text)
 
 
 def make_class_method(_, (name, slots), k):
