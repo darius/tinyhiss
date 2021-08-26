@@ -265,7 +265,7 @@ def read_key():
     return keys.get(k, k)
 
 def main():
-    hiss.startup()
+    hiss.start_up()
     os.system('stty raw -echo')
     try:
         sys.stdout.write(ansi.clear_screen)

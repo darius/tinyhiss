@@ -7,7 +7,7 @@ import fileout, parser, terp
 saving_changes = False
 changes = open('changes.hiss', 'a')
 
-def startup():
+def start_up():
     global saving_changes
     saving_changes = False
     with open('changes.hiss') as f:
