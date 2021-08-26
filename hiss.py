@@ -65,17 +65,6 @@ def make_class_method(_, (name, slots), k):
     add_change('>', 'Make-class named: %r with-slots: %r' % (name, slots))
     return k, name
 
-    env = terp.global_env
-    old = env.get(name)
-    old_methods = getattr(old, 'methods', {})
-    if not isinstance(old, terp.Class) or old.slots != slot_tuple:
-        env[name] = terp.Class(old_methods, slot_tuple)
-        # XXX for now we're leaving old instances alone, and they share
-        #  the method table. But their Thing data field ought to get updated
-        #  consistent with the change to slots (as far as possible). 
-    add_change('>', 'Make-class named: %r with-slots: %r' % (name, slots))
-    return k, name
-
 make_class_class = terp.Class({'named:with-slots:': make_class_method}, ())
 make_class = terp.Thing(make_class_class, ())
 
