@@ -22,13 +22,13 @@ class UI(object):
             buf.redisplay()
         while True:
             self.buf.redisplay()
-            ch = read_key()
-            if ch in ('', C('x'), C('q')):
+            key = read_key()
+            if key in ('', C('x'), C('q')):
                 break
-            keybindings.get(ch, lambda _: self.buf.insert(ch))(self)
-            if ch not in ('up', 'down'):
-                self.buf.column = None
-        if ch != C('q'):
+            last_buf = self.buf
+            keybindings.get(key, lambda _: self.buf.insert(key))(self)
+            last_buf.last_key = key
+        if key != C('q'):
             for buf in self.buffers:
                 buf.save()
 
@@ -39,6 +39,7 @@ class Buffer(object):
     # extent:   (cols, rows) size of the pane.
     # top_left: (x, y) coordinates of the top-left of the pane.
     def __init__(self, filename, extent, top_left):
+        self.text = load(filename) if filename is not None else ''
         self.filename = filename
         self.extent = extent
         self.top_left = top_left
@@ -46,7 +47,7 @@ class Buffer(object):
         self.origin = 0
         self.column = None
         self.killed = ''
-        self.text = load(filename) if filename is not None else ''
+        self.last_key = ''      # TODO make this a UI field instead?
 
     def save(self):
         if self.filename is None:
@@ -65,6 +66,8 @@ class Buffer(object):
 
     def move_line(self, d):
         p = self.start_of_line(self.point)
+        if self.last_key not in ('up', 'down'):
+            self.column = None
         if self.column is None:
             self.column = self.find_column(p, self.point)
         if d < 0:
@@ -119,11 +122,16 @@ class Buffer(object):
 
     def kill_line(self):
         p = self.end_of_line(self.point)
-        if self.point == p: # At end of line?
-            p = min(p + 1, len(self.text)) # Eat the \n character
-        killing = self.text[self.point:p]
-        self.replace(self.point, p, '')
-        self.killed = killing   # XXX add, don't replace, if in "killing mode"
+        if self.point == p:                # If already at end of line,
+            p = min(p + 1, len(self.text)) #   only then eat the \n character.
+        self.kill(self.point, p)
+
+    def kill(self, start, end):
+        killing = self.text[start:end]
+        self.replace(start, end, '')
+        if self.last_key != C('k'):
+            self.killed = ''
+        self.killed += killing
         
     def yank(self):
         self.insert(self.killed)
