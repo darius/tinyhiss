@@ -10,12 +10,15 @@ changes = open('changes.hiss', 'a')
 def start_up():
     global saving_changes
     saving_changes = False
-    with open('changes.hiss') as f:
-        changes = f.read()
-    for chunk in fileout.parse(changes.splitlines()):
-        load_chunk(chunk)
+    load_file('startup.hiss')
     saving_changes = True
 
+def load_file(filename):
+    with open(filename) as f:
+        text = f.read()
+    for chunk in fileout.parse(text.splitlines()):
+        load_chunk(chunk)
+    
 def load_chunk(text):
     if text.startswith('+ '): # Method definition
         _, class_name, method_decl = text.split(None, 2)

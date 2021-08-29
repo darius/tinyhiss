@@ -206,6 +206,17 @@ class Constant(namedtuple('_Constant', 'value')):
     def __repr__(self):
         return repr(self.value)
 
+prim_action_map = {             # XXX different interface for prim actions
+    'has':  has,
+    'at':   at,
+    'find': find,
+#    'find:default': find_default, # XXX
+    'size':  size,
+    '++':    add,
+    '=':     eq,
+    '<':     lt,
+}
+
 class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, receiver, env, k):
         return k, Block(receiver, env, self)
@@ -330,18 +341,8 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
 def then_k(_, (self, receiver, env), k):
     return self.expr2.eval(receiver, env, k)
 
-true_class = Class({'if-so:if-not:': make_method(('true-block', 'false-block'), (),
-                                                 Send(LocalGet('true-block'), 'value', ()),
-                                                 source="""\
-if-so: true-block if-not: false-block
-  true-block value""")},
-                   ())
-false_class = Class({'if-so:if-not:': make_method(('true-block', 'false-block'), (),
-                                                  Send(LocalGet('false-block'), 'value', ()),
-                                                 source="""\
-if-so: true-block if-not: false-block
-  false-block value""")},
-                    ())
+true_class = Class({}, ())   # Filled in at startup
+false_class = Class({}, ())  # ditto
 
 #global_env.adjoin('Object', thing_class)
 global_env.adjoin('Class',  class_class)
@@ -353,66 +354,3 @@ global_env.adjoin('True',   true_class)
 global_env.adjoin('Array',  array_class)
 
 final_k = None
-
-
-# Testing
-
-smoketest_expr = Send(Constant(2), '+', (Constant(3),))
-smoketest = smoketest_expr.eval(None, None, final_k)
-## trampoline(smoketest)
-#. 5
-
-def make(class_, k):
-    return call(class_, 'new', (),
-                (make_new_k, None, k))
-
-def make_new_k(instance, _, k):
-    return call(instance, 'init', (),
-                (ignore_k, instance, k))
-
-object_init = make_method((), (), Self())
-
-eg_init_with = make_method(('value',), (), SlotPut('whee', LocalGet('value')))
-eg_get_whee = make_method((), (), SlotGet('whee'))
-eg_yay_body = Send(Send(Self(), 'get_whee', ()), '+', (LocalGet('x'),))
-eg_yay = make_method(('x',), ('v',), eg_yay_body)
-eg_class = Class(dict(yay=eg_yay,
-                      get_whee=eg_get_whee,
-                      init_with=eg_init_with),
-                 ('whee',))
-def eg_init_with_k(instance, _, k):
-    return call(instance, 'init_with', (42,),
-                (ignore_k, instance, k))
-eg = call(eg_class, 'new', (),
-          (eg_init_with_k, None, final_k))
-eg = trampoline(eg)
-eg_result = call(eg, 'yay', (137,), final_k)
-## trampoline(eg_result)
-#. 179
-
-make_eg = make_method((), (),
-                      Send(Cascade(Send(Constant(eg_class), 'new', ()),
-                                   'init_with', (Constant(42),)),
-                           'yay', (Constant(137),)))
-make_eg_result = make_eg(None, (), final_k)
-## trampoline(make_eg_result)
-#. 179
-
-# TODO: make this a method on Number
-factorial_body = Send(Send(LocalGet('n'), '=', (Constant(0),)),
-                      'if-so:if-not:',
-                      (Code((), (), Constant(1)),
-                       Code((), (),
-                            # n * (self factorial: (n - 1))
-                            Send(LocalGet('n'), '*',
-                                 (Send(Self(), 'factorial:',
-                                       (Send(LocalGet('n'), '-', (Constant(1),)),)),)))))
-factorial_class = Class({'factorial:': make_method(('n',), (), factorial_body)},
-                        ())
-factorial = make_method((), (),
-                        Send(Send(Constant(factorial_class), 'new', ()),
-                             'factorial:',
-                             (Constant(5),)))
-try_factorial = factorial(None, (), final_k)
-## trampoline(try_factorial)
-#. 120

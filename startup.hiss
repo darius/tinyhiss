@@ -1,0 +1,16 @@
++ True if-so: true-block if-not: false-block
+  true-block value
+!
++ False if-so: true-block if-not: false-block
+  false-block value
+!
++ Tutorial part1
+
+-- Don't try to run this.
+!
++ Number factorial
+
+me = 0 
+	if-so: {1}
+	if-not: {me * (me - 1) factorial}
+!
