@@ -2,9 +2,35 @@
 Hacked up from https://github.com/darius/sketchbook/tree/master/editor
 """
 
-import os, sys, traceback
+import re, sys
+
 import ansi
-import hiss, parser, parson, terp
+
+class UI(object):
+    "Top-level user-interface state."
+
+    def __init__(self, buffers):
+        self.buffers = buffers
+        self.current_buffer = 0
+
+    @property
+    def buf(self):
+        return self.buffers[self.current_buffer]
+
+    def reacting(self):
+        for buf in self.buffers:
+            buf.redisplay()
+        while True:
+            self.buf.redisplay()
+            ch = read_key()
+            if ch in ('', C('x'), C('q')):
+                break
+            keybindings.get(ch, lambda _: self.buf.insert(ch))(self)
+            if ch not in ('up', 'down'):
+                self.buf.column = None
+        if ch != C('q'):
+            for buf in self.buffers:
+                buf.save()
 
 class Buffer(object):
     "A pane of editable text on screen."
@@ -19,6 +45,7 @@ class Buffer(object):
         self.point = 0
         self.origin = 0
         self.column = None
+        self.killed = ''
         self.text = load(filename) if filename is not None else ''
 
     def save(self):
@@ -30,6 +57,11 @@ class Buffer(object):
 
     def move_char(self, d):
         self.point = max(0, min(self.point + d, len(self.text)))
+
+    def forward_word(self):     # XXX TODO forward/backward move/kill
+        pat = re.compile(r'\W*\w+') # TODO hoist
+        m = pat.match(self.text, self.point)
+        self.point = m.end()
 
     def move_line(self, d):
         p = self.start_of_line(self.point)
@@ -55,6 +87,12 @@ class Buffer(object):
         eol = self.text.find('\n', p)
         return eol if eol != -1 else len(self.text)
 
+    def go_start_of_line(self):
+        self.point = self.start_of_line(self.point)
+
+    def go_end_of_line(self):
+        self.point = self.end_of_line(self.point)
+
     def find_column(self, bol, p):
         # XXX code duplication wrt redisplay()
         # XXX doesn't handle escaped chars
@@ -79,6 +117,17 @@ class Buffer(object):
         elif end <= self.point:
             self.point = start + len(string) + (self.point - end)
 
+    def kill_line(self):
+        p = self.end_of_line(self.point)
+        if self.point == p: # At end of line?
+            p = min(p + 1, len(self.text)) # Eat the \n character
+        killing = self.text[self.point:p]
+        self.replace(self.point, p, '')
+        self.killed = killing   # XXX add, don't replace, if in "killing mode"
+        
+    def yank(self):
+        self.insert(self.killed)
+
     def redisplay(self):
         (cols, rows) = self.extent
         if not try_redisplay(self, lambda s: None):
@@ -89,7 +138,7 @@ class Buffer(object):
 
 def load(filename):
     try:            f = open(filename)
-    except IOError: result = ''
+    except IOError: result = '' # XXX too-broad catch
     else:           result = f.read(); f.close()
     return result
 
@@ -131,117 +180,48 @@ def set_key(ch, fn):
 
 def bind(ch): return lambda fn: set_key(ch, fn)
 
-set_key('\r', lambda buf: buf.insert('\n'))
+set_key('\r', lambda ui: ui.buf.insert('\n'))
 
 @bind(chr(127))
-def backward_delete_char(buf):
-    if 0 == buf.point: return
-    buf.text = buf.text[:buf.point-1] + buf.text[buf.point:]
-    buf.point -= 1
+def backward_delete_char(ui):
+    if 0 == ui.buf.point: return
+    ui.buf.text = ui.buf.text[:ui.buf.point-1] + ui.buf.text[ui.buf.point:]
+    ui.buf.point -= 1
 
 @bind(C('b'))
 @bind('left')
-def backward_move_char(buf): buf.move_char(-1)
+def backward_move_char(ui): ui.buf.move_char(-1)
 
 @bind(C('f'))
 @bind('right')
-def forward_move_char(buf): buf.move_char(1)
+def forward_move_char(ui): ui.buf.move_char(1)
+
+@bind(C('a'))
+def start_of_line(ui): ui.buf.go_start_of_line()
+
+@bind(C('e'))
+def end_of_line(ui): ui.buf.go_end_of_line()
 
 @bind('down')
-def forward_move_line(buf): buf.move_line(1)
+def forward_move_line(ui): ui.buf.move_line(1)
 
 @bind('up')
-def backward_move_line(buf): buf.move_line(-1)
+def backward_move_line(ui): ui.buf.move_line(-1)
 
-workspace_env = terp.Env({}, terp.global_env)
+@bind(M('<'))
+def start_of_buffer(ui): ui.buf.point = 0
 
-def workspace_run(text):
-    code = parser.parse_code(text)
-    if isinstance(code.expr, terp.Constant) and code.expr.value is None:
-        # Special case to add variables to the workspace. I know, yuck.
-        for var in code.locals:
-            workspace_env.enter(var, None)
-    block = terp.Block(text, workspace_env, code) # XXX redundant with hiss.run()
-    return terp.trampoline(block.enter((), terp.final_k))
+@bind(M('>'))
+def end_of_buffer(ui): ui.buf.point = len(ui.buf.text)
 
-@bind(C('j'))
-def smalltalk_print_it(buf):
-    bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
-    line = buf.text[bol:eol]
-    # XXX hacky error-prone matching; move this to parser module
-    old_result = buf.text.find(' --> ', bol, eol)
-    if old_result == -1: old_result = buf.text.find(' --| ', bol, eol)
-    if old_result == -1: old_result = eol
-    try:
-        comment = '-->'
-        result = repr(workspace_run(line))
-    except:
-        comment = '--|'
-        if False:               # Set to True for tracebacks
-            result = traceback.format_exc()
-        else:
-            result = format_exception(sys.exc_info())
-    buf.replace(old_result, eol,
-                ' %s %s' % (comment, result.replace('\n', ' / ')))
+@bind(C('k'))
+def kill_line(ui): ui.buf.kill_line()
 
-def format_exception((etype, value, tb), limit=None):
-    lines = traceback.format_exception_only(etype, value)
-    return '\n'.join(lines).rstrip('\n')
+@bind(C('y'))
+def yank(ui): ui.buf.yank()
 
-@bind(M('a'))
-def smalltalk_accept(buf):
-    class_name, method_decl = split2(buf.text)
-    try:
-        hiss.add_method(class_name, method_decl, terp.global_env)
-    except parson.Unparsable, exc:
-        buf.point = len(buf.text) - len(method_decl) + exc.position
-        buf.insert('<<Unparsable>>')
-
-@bind('pgdn')
-def next_method(buf): visit_methods(buf)
-@bind('pgup')
-def next_method(buf): visit_methods(buf, reverse=True)
-
-def visit_methods(buf, reverse=False):
-    class_name, method_decl = split2(buf.text)
-    try:
-        class_ = terp.global_env.get(class_name)
-    except KeyError:
-        return
-    try:
-        (selector, _), = parser.grammar.method_header(method_decl)
-    except parson.Unparsable:
-        selector = None
-    selector, method = class_.next_method(selector, reverse)
-    if selector:
-        buf.text = class_name + ' ' + get_source(selector, method)
-        buf.point = 0           # XXX move to start of body, I guess
-
-def split2(text):
-    splits = text.split(None, 1)
-    return splits + [''] if len(splits) == 1 else splits
-
-def get_source(selector, method):
-    # Ugly logic because the 'method' may be primitive (just a Python
-    # function, with no Smalltalk source).
-    if hasattr(method, 'source'):
-        if method.source: return method.source
-    return head_from_selector(selector) + '\n\n  <<primitive>>'
-
-def head_from_selector(selector):
-    if ':' in selector:
-        return ' '.join('%s: foo' % part
-                        for part in selector.split(':') if part)
-    elif selector[:1].isalnum():
-        return selector
-    else:
-        return selector + ' foo'
-
-@bind('end')                    # XXX a silly key for it
-def next_buffer(buf):
-    global current_buffer
-    i = all_buffers.index(buf)
-    current_buffer = all_buffers[(i+1) % len(all_buffers)]
+# @bind(M('right'))  XXX won't work
+def forward_word(ui): ui.buf.forward_word()
 
 keys = {
     esc+'[1~': 'home',
@@ -263,36 +243,3 @@ def read_key():
         if not k1: break
         k += k1
     return keys.get(k, k)
-
-def main():
-    hiss.start_up()
-    os.system('stty raw -echo')
-    try:
-        sys.stdout.write(ansi.clear_screen)
-        reacting()
-    finally:
-        os.system('stty sane')
-
-def reacting():
-    for buf in all_buffers:
-        buf.redisplay()
-    while True:
-        current_buffer.redisplay()
-        ch = read_key()
-        if ch in ('', C('x'), C('q')):
-            break
-        keybindings.get(ch, lambda buf: buf.insert(ch))(current_buffer)
-        if ch not in ('up', 'down'):
-            current_buffer.column = None
-    if ch != C('q'):
-        for buf in all_buffers:
-            buf.save()
-
-if __name__ == '__main__':
-    ROWS, COLS = map(int, os.popen('stty size', 'r').read().split())
-    all_buffers = [Buffer(sys.argv[i+1] if i+1 < len(sys.argv) else None,
-                          (COLS//2-1, ROWS),
-                          (i*(COLS//2+1), 0))
-                   for i in range(2)]
-    current_buffer = all_buffers[0]
-    main()

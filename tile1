@@ -21,7 +21,7 @@ This will compile the new method into the class, or else complain with an
 error message from the compiler.
 
 (This editor supports just a few Emacs keybindings: the arrow keys, backspace,
-C-f and C-b. Yes, it sucks.)
+C-a, C-e, C-k, C-y, M-<, M->. The kill ring doesn't work yet. Yes, it sucks.)
 
 If you'd rather create a new method, then enter its selector in the first 
 line, replacing the selector of whatever method is currently there. For
