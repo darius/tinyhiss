@@ -22,6 +22,7 @@ def make_method(params, locals_, expr, source=None):
     return Method(source, Code(params, locals_, expr))
 
 class Method(namedtuple('_Method', 'source code')):
+    # TODO: class_ = ...
     def __call__(self, receiver, arguments, k):
         return self.code.enter(receiver, arguments, None, k)
     def __repr__(self):
@@ -39,19 +40,8 @@ class Block(namedtuple('_Block', 'me env code')):
     def __repr__(self):
         return 'Block(%r, %r, %r)' % (self.me, self.env, self.code)
 
-class Self(namedtuple('_Self', '')):
-    def eval(self, me, env, k):
-        return k, me
-    def __repr__(self):
-        return 'I'
-
-class Constant(namedtuple('_Constant', 'value')):
-    def eval(self, me, env, k):
-        return k, self.value
-    def __repr__(self):
-        return repr(self.value)
-
 class Code(namedtuple('_Code', 'params locals expr')):
+    # TODO: class_ = ...
     def eval(self, me, env, k):
         return k, Block(me, env, self)
     def enter(self, me, arguments, parent_env, k):
@@ -65,6 +55,18 @@ class Code(namedtuple('_Code', 'params locals expr')):
         locs = ' '.join(self.locals)
         if locs: locs = '|%s| ' % locs
         return '{%s%s%r}' % (params, locs, self.expr)
+
+class Self(namedtuple('_Self', '')):
+    def eval(self, me, env, k):
+        return k, me
+    def __repr__(self):
+        return 'I'
+
+class Constant(namedtuple('_Constant', 'value')):
+    def eval(self, me, env, k):
+        return k, self.value
+    def __repr__(self):
+        return repr(self.value)
 
 def with_key(key, thunk):
     try: return thunk()
