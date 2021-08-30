@@ -12,6 +12,7 @@ class UI(object):
     def __init__(self, buffers):
         self.buffers = buffers
         self.current_buffer = 0
+        self.killed = ''
 
     @property
     def buf(self):
@@ -47,7 +48,6 @@ class Buffer(object):
         self.point = 0
         self.origin = 0
         self.column = None
-        self.killed = ''
         self.last_key = ''      # TODO make this a UI field instead?
 
     def save(self):
@@ -131,11 +131,11 @@ class Buffer(object):
         killing = self.text[start:end]
         self.replace(start, end, '')
         if self.last_key != C('k'):
-            self.killed = ''
-        self.killed += killing
+            self.ui.killed = ''
+        self.ui.killed += killing
         
     def yank(self):
-        self.insert(self.killed)
+        self.insert(self.ui.killed)
 
     def redisplay(self):
         (cols, rows) = self.extent
