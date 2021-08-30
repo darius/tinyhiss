@@ -37,7 +37,8 @@ class Class(namedtuple('_Class', 'methods slots')):
             name = cyclic_next(selector, keys)
         return (None, None) if name is None else (name, self.methods[name])
     def __repr__(self):
-        name = global_env.find_value(self)
+        import terp
+        name = terp.global_env.find_value(self)
         if name is not None: return name
         return '<<Class %s | %s>>' % (' '.join(self.slots),
                                       self.methods)
