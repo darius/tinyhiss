@@ -6,6 +6,15 @@ from collections import namedtuple
 
 from core import call, class_from_type
 
+class Thing(namedtuple('_Thing', 'class_ data')):
+    def get(self, key):
+        return self.data[self.class_.slot_index[key]]
+    def put(self, key, value):
+        self.data[self.class_.slot_index[key]] = value
+    def __repr__(self):
+        return '%r(%s)' % (self.class_,
+                           ', '.join(map(repr, self.data)))
+
 class Class(namedtuple('_Class', 'methods slots')):
     class_ = None  # (stub, filled in below)
     def __init__(self, methods, slots):

@@ -7,16 +7,7 @@ import itertools
 
 from core import call, class_from_type
 import primitive
-from primitive import Class
-
-class Thing(namedtuple('_Thing', 'class_ data')):
-    def get(self, key):
-        return self.data[self.class_.slot_index[key]]
-    def put(self, key, value):
-        self.data[self.class_.slot_index[key]] = value
-    def __repr__(self):
-        return '%r(%s)' % (self.class_,
-                           ', '.join(map(repr, self.data)))
+from primitive import Class, Thing
 
 def make_method(params, locals_, expr, source=None):
     return Method(source, Code(params, locals_, expr))

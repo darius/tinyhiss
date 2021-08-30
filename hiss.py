@@ -2,7 +2,7 @@
 Tie together the parser and interpreter.
 """
 
-import core, fileout, parser, terp
+import core, fileout, primitive, parser, terp
 
 saving_changes = False
 changes = open('changes.hiss', 'a')
@@ -68,8 +68,8 @@ def make_class_method(_, (name, slots), k):
     add_change('>', 'Make-class named: %r with-slots: %r' % (name, slots))
     return k, name
 
-make_class_class = terp.Class({'named:with-slots:': make_class_method}, ())
-make_class = terp.Thing(make_class_class, ())
+make_class_class = primitive.Class({'named:with-slots:': make_class_method}, ())
+make_class = primitive.Thing(make_class_class, ())
 
 terp.global_env.adjoin('Make-class', make_class)
 
@@ -98,12 +98,3 @@ factorial: n
 ## add_method('Factorial', fact, terp.global_env)
 ## run("Factorial new factorial: 5", terp.global_env)
 #. 120
-
-casc = """\
-5 + 1; * 2
-"""
-## run(casc, terp.global_env)
-#. 6
-## casc_block = parse_block(casc, terp.global_env)
-## casc_block
-#. Block('5 + 1; * 2\n', Env({'A': A, 'False': False, 'String': String, 'Factorial': Factorial, 'Number': Number, 'CountingUp': CountingUp, 'Make-class': <<Class  | {'named:with-slots:': <function make_class_method at 0x7f5b39c522d0>}>>(), 'Tutorial': Tutorial, 'Array': Array, 'True': True, 'Class': Class, 'Block': Block}, None), {((5 + 1); * 2)})
