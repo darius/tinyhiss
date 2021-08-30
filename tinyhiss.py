@@ -30,8 +30,7 @@ def workspace_run(text):
     return terp.trampoline(block.enter((), terp.final_k))
 
 @bind(C('j'))
-def smalltalk_print_it(ui):
-    buf = ui.buf
+def smalltalk_print_it(buf):
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
     # XXX hacky error-prone matching; move this to parser module
@@ -55,8 +54,7 @@ def format_exception((etype, value, tb), limit=None):
     return '\n'.join(lines).rstrip('\n')
 
 @bind(M('a'))
-def smalltalk_accept(ui):
-    buf = ui.buf
+def smalltalk_accept(buf):
     class_name, method_decl = split2(buf.text)
     try:
         hiss.add_method(class_name, method_decl, terp.global_env)
@@ -65,9 +63,9 @@ def smalltalk_accept(ui):
         buf.insert('<<Unparsable>>')
 
 @bind('pgdn')
-def next_method(ui): visit_methods(ui.buf)
+def next_method(buf): visit_methods(buf)
 @bind('pgup')
-def next_method(ui): visit_methods(ui.buf, reverse=True)
+def next_method(buf): visit_methods(buf, reverse=True)
 
 def visit_methods(buf, reverse=False):
     class_name, method_decl = split2(buf.text)
@@ -105,14 +103,18 @@ def head_from_selector(selector):
         return selector + ' foo'
 
 @bind('end')                    # XXX a silly key for it
-def next_buffer(ui):
+def next_buffer(buf):
+    ui = buf.ui
     ui.current_buffer = (ui.current_buffer+1) % len(ui.buffers)
 
 
 if __name__ == '__main__':
     ROWS, COLS = map(int, os.popen('stty size', 'r').read().split())
-    buffers = [Buffer(sys.argv[i+1] if i+1 < len(sys.argv) else None,
-                      (COLS//2-1, ROWS),
-                      (i*(COLS//2+1), 0))
-               for i in range(2)]
-    main(UI(buffers))
+    the_buffers = []
+    the_ui = UI(the_buffers)
+    for i in range(2):
+        the_buffers.append(Buffer(the_ui,
+                                  sys.argv[i+1] if i+1 < len(sys.argv) else None,
+                                  (COLS//2-1, ROWS),
+                                  (i*(COLS//2+1), 0)))
+    main(the_ui)

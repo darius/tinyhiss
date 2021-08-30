@@ -26,7 +26,7 @@ class UI(object):
             if key in ('', C('x'), C('q')):
                 break
             last_buf = self.buf
-            keybindings.get(key, lambda _: self.buf.insert(key))(self)
+            keybindings.get(key, lambda buf: buf.insert(key))(self.buf)
             last_buf.last_key = key
         if key != C('q'):
             for buf in self.buffers:
@@ -38,11 +38,12 @@ class Buffer(object):
     # filename: source/destination of the text to edit, or None.
     # extent:   (cols, rows) size of the pane.
     # top_left: (x, y) coordinates of the top-left of the pane.
-    def __init__(self, filename, extent, top_left):
-        self.text = load(filename) if filename is not None else ''
+    def __init__(self, ui, filename, extent, top_left):
+        self.ui = ui
         self.filename = filename
         self.extent = extent
         self.top_left = top_left
+        self.text = load(filename) if filename is not None else ''
         self.point = 0
         self.origin = 0
         self.column = None
@@ -188,48 +189,48 @@ def set_key(ch, fn):
 
 def bind(ch): return lambda fn: set_key(ch, fn)
 
-set_key('\r', lambda ui: ui.buf.insert('\n'))
+set_key('\r', lambda buf: buf.insert('\n'))
 
 @bind(chr(127))
-def backward_delete_char(ui):
-    if 0 == ui.buf.point: return
-    ui.buf.text = ui.buf.text[:ui.buf.point-1] + ui.buf.text[ui.buf.point:]
-    ui.buf.point -= 1
+def backward_delete_char(buf):
+    if 0 == buf.point: return
+    buf.text = buf.text[:buf.point-1] + buf.text[buf.point:]
+    buf.point -= 1
 
 @bind(C('b'))
 @bind('left')
-def backward_move_char(ui): ui.buf.move_char(-1)
+def backward_move_char(buf): buf.move_char(-1)
 
 @bind(C('f'))
 @bind('right')
-def forward_move_char(ui): ui.buf.move_char(1)
+def forward_move_char(buf): buf.move_char(1)
 
 @bind(C('a'))
-def start_of_line(ui): ui.buf.go_start_of_line()
+def start_of_line(buf): buf.go_start_of_line()
 
 @bind(C('e'))
-def end_of_line(ui): ui.buf.go_end_of_line()
+def end_of_line(buf): buf.go_end_of_line()
 
 @bind('down')
-def forward_move_line(ui): ui.buf.move_line(1)
+def forward_move_line(buf): buf.move_line(1)
 
 @bind('up')
-def backward_move_line(ui): ui.buf.move_line(-1)
+def backward_move_line(buf): buf.move_line(-1)
 
 @bind(M('<'))
-def start_of_buffer(ui): ui.buf.point = 0
+def start_of_buffer(buf): buf.point = 0
 
 @bind(M('>'))
-def end_of_buffer(ui): ui.buf.point = len(ui.buf.text)
+def end_of_buffer(buf): buf.point = len(buf.text)
 
 @bind(C('k'))
-def kill_line(ui): ui.buf.kill_line()
+def kill_line(buf): buf.kill_line()
 
 @bind(C('y'))
-def yank(ui): ui.buf.yank()
+def yank(buf): buf.yank()
 
 # @bind(M('right'))  XXX won't work
-def forward_word(ui): ui.buf.forward_word()
+def forward_word(buf): buf.forward_word()
 
 keys = {
     esc+'[1~': 'home',
