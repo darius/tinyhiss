@@ -41,8 +41,9 @@ Any of these actions work in either window tile. I only suggested moving
 over to the one on the right in order to preserve these instructions here.
 
 A changed or new method, once successfully compiled, gets appended to
-the file 'changes.hiss', and automatically reloaded next time you
-start up (whether or not you quit without saving the current text in
-this workspace). If you made a mistake and want to go back to a
-previous version of the method's code, you can still fish it out of
-the changes file.
+the file 'changes.hiss' (whether or not you quit without saving the
+current text in this workspace). If you made a mistake and want to go
+back to a previous version of the method's code, you can still fish it
+out of the changes file. If you want the saved version to be loaded
+into your next session, then (sometime before that session) manually
+copy it from changes.hiss to startup.hiss. (Yes, this also sucks.)

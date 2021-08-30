@@ -137,15 +137,19 @@ def new_method(receiver, arguments, k):
 
 class_class = Class(dict(new=new_method), ())
 
-block_class = Class(dict(value=lambda receiver, arguments, k: receiver.enter((), k)),
-                    ())
+block_methods = {
+    'value':  lambda receiver, arguments, k: receiver.enter(arguments, k),
+    'value:': lambda receiver, arguments, k: receiver.enter(arguments, k),
+}
+block_class = Class(block_methods, ())
 
-num_methods = {'+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
-               '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
-               '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
-               '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
-               '<': lambda rcvr, (other,), k: (k, rcvr < other),
-               }
+num_methods = {
+    '+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
+    '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
+    '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
+    '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
+    '<': lambda rcvr, (other,), k: (k, rcvr < other),
+}
 num_class = Class(num_methods, ())
 
 def as_number(thing):
@@ -172,26 +176,28 @@ def as_string(thing):
         return thing
     assert False, "Not a string: %r" % (thing,)
 
-string_methods = {'has:':  has,
-                  'at:':   at,
-                  'find:': find,
-                  'find:default:': find_default,
-                  'size':  size,
-                  '++':    add,
-                  '=':     eq,
-                  '<':     lt,
-              }
+string_methods = {
+    'has:':  has,
+    'at:':   at,
+    'find:': find,
+    'find:default:': find_default,
+    'size':  size,
+    '++':    add,
+    '=':     eq,
+    '<':     lt,
+}
 string_class = Class(string_methods, ())
 
-array_methods = {'has:':  has,
-                 'at:':   at,
-                 'find:': find,
-                 'find:default:': find_default,
-                 'size':  size,
-                 '++':    add,
-                 '=':     eq,
-                 '<':     lt,
-              }
+array_methods = {
+    'has:':  has,
+    'at:':   at,
+    'find:': find,
+    'find:default:': find_default,
+    'size':  size,
+    '++':    add,
+    '=':     eq,
+    '<':     lt,
+}
 array_class = Class(array_methods, ())
 
 class Self(namedtuple('_Self', '')):
@@ -205,17 +211,6 @@ class Constant(namedtuple('_Constant', 'value')):
         return k, self.value
     def __repr__(self):
         return repr(self.value)
-
-prim_action_map = {             # XXX different interface for prim actions
-    'has':  has,
-    'at':   at,
-    'find': find,
-#    'find:default': find_default, # XXX
-    'size':  size,
-    '++':    add,
-    '=':     eq,
-    '<':     lt,
-}
 
 class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, receiver, env, k):

@@ -1,8 +1,14 @@
 + True if-so: true-block if-not: false-block
   true-block value
 !
++ True if-so: true-block
+  true-block value
+!
 + False if-so: true-block if-not: false-block
   false-block value
+!
++ False if-so: true-block
+  nil
 !
 + Tutorial part1
 
@@ -13,4 +19,36 @@
 me = 0 
 	if-so: {1}
 	if-not: {me * (me - 1) factorial}
+!
+> Make-class named: 'Counting-up' with-slots: 'i bound step'
+!
++ Counting-up from: i
+  my i := i
+!
++ Counting-up till: bound
+  my bound := bound
+!
++ Counting-up by: step
+  my step := step
+!
++ Counting-up thru: bound
+  my bound := bound + my step
+!
++ Counting-up do: block
+  (my i < my bound)
+      if-so: {block value: my i.
+              my i := my i + my step.
+              I do: block}
+!
++ Number till: bound by: step do: block
+  (Counting-up new; by: step; from: me; till: bound) do: block
+!
++ Number till: bound do: block
+  me till: bound by: 1 do: block
+!
++ Number thru: last by: step do: block
+  (Counting-up new; by: step; from: me; thru: last) do: block
+!
++ Number thru: last do: block
+  me thru: last by: 1 do: block
 !

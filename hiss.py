@@ -76,6 +76,18 @@ terp.global_env.adjoin('Make-class', make_class)
 
 # Smoke test
 
+## run("3 + 4 * 5", terp.global_env)
+#. 35
+
+## run("Make-class named: 'A' with-slots: 'a'", terp.global_env)
+#. 'A'
+
+## start_up()
+## saving_changes = False
+
+## run("5 factorial", terp.global_env)
+#. 120
+
 fact = """\
 factorial: n
 
@@ -87,19 +99,11 @@ factorial: n
 ## run("Factorial new factorial: 5", terp.global_env)
 #. 120
 
-fact2 = """\
-factorial
-
-I = 0
-    if-so: {1}
-    if-not: {me * (me - 1) factorial}
+casc = """\
+5 + 1; * 2
 """
-## add_method('Number', fact2, terp.global_env)
-## run("5 factorial", terp.global_env)
-#. 120
-
-## run("3 + 4 * 5", terp.global_env)
-#. 35
-
-## run("Make-class named: 'A' with-slots: 'a'", terp.global_env)
-#. 'A'
+## run(casc, terp.global_env)
+#. 6
+## casc_block = parse_block(casc, terp.global_env)
+## casc_block
+#. Block('5 + 1; * 2\n', Env({'A': A, 'False': False, 'String': String, 'Factorial': Factorial, 'Number': Number, 'CountingUp': CountingUp, 'Make-class': <<Class  | {'named:with-slots:': <function make_class_method at 0x7f5b39c522d0>}>>(), 'Tutorial': Tutorial, 'Array': Array, 'True': True, 'Class': Class, 'Block': Block}, None), {((5 + 1); * 2)})
