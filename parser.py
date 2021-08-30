@@ -45,7 +45,8 @@ operand     :  block
             |  name               :mk_var_get
             |  /(-?\d+)/          :mk_int  # TODO add base-r literals, floats, and scaled decimals
             |  string_literal     :mk_string
-            |  '(' stmt ')'.
+            |  '(' stmt ')'
+            |  '[' expr**'.' '.'? ']' :hug :mk_array.
 
 block       :  '{' block_args? :hug code '}' :mk_block.
 block_args  :  (':' name)+ '|'.
@@ -90,6 +91,8 @@ mk_string = lambda s: terp.Constant(s)
 
 mk_slot_get = terp.SlotGet
 mk_slot_put = terp.SlotPut
+
+mk_array = terp.MakeArray
 
 def mk_var_get(name):
     return terp.GlobalGet(name) if name[:1].isupper() else terp.LocalGet(name)

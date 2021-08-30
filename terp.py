@@ -188,6 +188,10 @@ string_methods = {
 }
 string_class = Class(string_methods, ())
 
+def array_append(receiver, (arg,), k):
+    receiver.append(arg)
+    return k, None
+
 array_methods = {
     'has:':  has,
     'at:':   at,
@@ -197,6 +201,7 @@ array_methods = {
     '++':    add,
     '=':     eq,
     '<':     lt,
+    'append:': array_append,
 }
 array_class = Class(array_methods, ())
 
@@ -335,6 +340,17 @@ class Then(namedtuple('_Then', 'expr1 expr2')):
 
 def then_k(_, (then_, me, env), k):
     return then_.expr2.eval(me, env, k)
+
+def MakeArray(exprs):
+    subject = Send(GlobalGet('Make-array'), 'empty', ())
+    for e in exprs:
+        subject = Cascade(subject, 'append:', (e,))
+    return subject
+
+def make_array_empty_method(receiver, arguments, k): return k, []
+make_array_class = Class({'empty': make_array_empty_method},
+                         ())
+global_env.adjoin('Make-array', Thing(make_array_class, ()))
 
 true_class = Class({}, ())   # Filled in at startup
 false_class = Class({}, ())  # ditto
