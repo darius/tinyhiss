@@ -31,10 +31,9 @@ block_methods = {
     'value':  lambda receiver, arguments, k: receiver.enter(arguments, k),
     'value:': lambda receiver, arguments, k: receiver.enter(arguments, k),
 }
-block_class = Class(block_methods, ())
 
 class Block(namedtuple('_Block', 'me env code')):
-    class_ = block_class
+    class_ = Class(block_methods, ())
     def enter(self, arguments, k):
         return self.code.enter(self.me, arguments, self.env, k)
     def __repr__(self):
@@ -224,10 +223,11 @@ true_class = Class({}, ())   # Filled in at startup
 false_class = Class({}, ())  # ditto
 
 #global_env.adjoin('Object', thing_class)
+global_env.adjoin('Block',  Block.class_)
 global_env.adjoin('Class',  Class.class_)
-global_env.adjoin('Block',  block_class)
+
+global_env.adjoin('Array',  array_class)
+global_env.adjoin('False',  false_class)
 global_env.adjoin('Number', num_class)
 global_env.adjoin('String', string_class)
-global_env.adjoin('False',  false_class)
 global_env.adjoin('True',   true_class)
-global_env.adjoin('Array',  array_class)
