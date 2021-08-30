@@ -6,7 +6,7 @@ Augment the text-editing UI with means to edit and run code.
 import os, sys, traceback
 import ansi
 
-import hiss, parser, parson, terp
+import core, hiss, parser, parson, terp
 from editor import UI, Buffer, C, M, bind
 
 def main(ui):
@@ -27,7 +27,7 @@ def workspace_run(text):
         for var in code.locals:
             workspace_env.enter(var, None)
     block = terp.Block(text, workspace_env, code) # XXX redundant with hiss.run()
-    return terp.trampoline(block.enter((), terp.final_k))
+    return core.trampoline(block.enter((), terp.final_k))
 
 @bind(C('j'))
 def smalltalk_print_it(buf):

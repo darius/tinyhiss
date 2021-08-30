@@ -5,7 +5,7 @@ AST interpreter
 from collections import namedtuple
 import itertools
 
-from core import trampoline, traceback, call, class_from_type, get_class
+from core import call, class_from_type
 
 class Thing(namedtuple('_Thing', 'class_ data')):
     def get(self, key):

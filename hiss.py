@@ -2,7 +2,7 @@
 Tie together the parser and interpreter.
 """
 
-import fileout, parser, terp
+import core, fileout, parser, terp
 
 saving_changes = False
 changes = open('changes.hiss', 'a')
@@ -47,7 +47,7 @@ def ensure_class(name, classes):
 
 def run(text, env):
     block = parse_block(text, env)
-    return terp.trampoline(block.enter((), terp.final_k))
+    return core.trampoline(block.enter((), terp.final_k))
 
 def parse_block(text, env):
     # XXX why is text the receiver? what was I thinking?
