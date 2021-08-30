@@ -70,6 +70,7 @@ def at(rcvr, (i,), k):       return (k, rcvr[i])
 def find(rcvr, (other,), k): return (k, rcvr.index(other))
 def size(rcvr, _, k):        return (k, len(rcvr))
 def add(rcvr, (other,), k):  return (k, rcvr + other)
+def mul(rcvr, (other,), k):  return (k, rcvr * other)
 def eq(rcvr, (other,), k):   return (k, rcvr == other)
 def lt(rcvr, (other,), k):   return (k, rcvr < other)
 
@@ -87,6 +88,7 @@ string_methods = {
     'find:default:': find_default,
     'size':  size,
     '++':    add,
+    '*':     mul,
     '=':     eq,
     '<':     lt,
 }
@@ -105,6 +107,7 @@ array_methods = {
     'find:default:': find_default,
     'size':  size,
     '++':    add,
+    '*':     mul,
     '=':     eq,
     '<':     lt,
     'append:': array_append,
