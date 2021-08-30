@@ -50,8 +50,7 @@ def run(text, env):
     return core.trampoline(block.enter((), core.final_k))
 
 def parse_block(text, env):
-    # XXX why is text the receiver? what was I thinking?
-    return terp.Block(text, env, parser.parse_code(text))
+    return terp.Block(None, env, parser.parse_code(text))
 
 
 def make_class_method(_, (name, slots), k):

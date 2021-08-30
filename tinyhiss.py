@@ -26,7 +26,7 @@ def workspace_run(text):
         # Special case to add variables to the workspace. I know, yuck.
         for var in code.locals:
             workspace_env.install(var, None)
-    block = terp.Block(text, workspace_env, code) # XXX redundant with hiss.run()
+    block = terp.Block(None, workspace_env, code) # XXX redundant with hiss.run()
     return core.trampoline(block.enter((), core.final_k))
 
 @bind(C('j'))
