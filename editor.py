@@ -78,8 +78,8 @@ class Buffer(object):
         else:
             for _ in range(d):
                 nl = self.end_of_line(p)
-                if nl == len(self.text): break
-                p = nl + 1
+                p = min(nl + 1, len(self.text))
+                if p == len(self.text): break
         eol = self.end_of_line(p)
         # XXX step forward until current column == column -- could be different
         self.point = min(p + self.column, eol)
