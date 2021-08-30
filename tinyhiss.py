@@ -25,9 +25,9 @@ def workspace_run(text):
     if isinstance(code.expr, terp.Constant) and code.expr.value is None:
         # Special case to add variables to the workspace. I know, yuck.
         for var in code.locals:
-            workspace_env.enter(var, None)
+            workspace_env.install(var, None)
     block = terp.Block(text, workspace_env, code) # XXX redundant with hiss.run()
-    return core.trampoline(block.enter((), terp.final_k))
+    return core.trampoline(block.enter((), core.final_k))
 
 @bind(C('j'))
 def smalltalk_print_it(buf):

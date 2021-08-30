@@ -10,6 +10,8 @@ def trampoline(state):
         k, value = fn(value, free_var, k)
     return value
 
+final_k = None
+
 def traceback(state):
     k, value = state
     print ':', value

@@ -43,11 +43,11 @@ def raw_add_method(class_name, text, classes):
     ensure_class(class_name, classes).put_method(selector, method)
 
 def ensure_class(name, classes):
-    return classes.enter(name, terp.Class({}, ()))
+    return classes.install(name, terp.Class({}, ()))
 
 def run(text, env):
     block = parse_block(text, env)
-    return core.trampoline(block.enter((), terp.final_k))
+    return core.trampoline(block.enter((), core.final_k))
 
 def parse_block(text, env):
     # XXX why is text the receiver? what was I thinking?
