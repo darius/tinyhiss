@@ -7,7 +7,7 @@ import itertools
 
 from core import call, class_from_type
 from primitive import Class
-from primitive import array_class, num_class, string_class
+from primitive import array_class, false_class, num_class, string_class, true_class
 
 class Thing(namedtuple('_Thing', 'class_ data')):
     def get(self, key):
@@ -218,9 +218,6 @@ def make_array_empty_method(receiver, arguments, k): return k, []
 make_array_class = Class({'empty': make_array_empty_method},
                          ())
 global_env.adjoin('Make-array', Thing(make_array_class, ()))
-
-true_class = Class({}, ())   # Filled in at startup
-false_class = Class({}, ())  # ditto
 
 #global_env.adjoin('Object', thing_class)
 global_env.adjoin('Block',  Block.class_)

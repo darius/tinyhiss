@@ -45,6 +45,11 @@ def cyclic_next(key, lot):
             result = next(it)
             return result
         
+true_class = Class({}, ())   # Filled in at startup
+false_class = Class({}, ())  # ditto
+
+primitive_method_class = Class({}, ())  # TODO: fill this in
+
 def find_default(rcvr, (other, default), k):
     try:
         return k, rcvr.index(other)

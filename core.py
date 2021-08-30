@@ -31,16 +31,15 @@ def get_class(x):
         return x.class_         # TODO maybe call this .hiss_class or something instead
     except AttributeError:
         pass
-    if isinstance(x, bool):
-        import terp
-        return terp.true_class if x else terp.false_class
     try:
         return class_from_type[type(x)]
     except KeyError:
         pass
+    import primitive
+    if isinstance(x, bool):
+        return primitive.true_class if x else primitive.false_class
     if callable(x):
-        import terp
-        return terp.primitive_method_class # TODO: define this
+        return primitive.primitive_method_class
     assert False, "Classless datum"
 
 class_from_type = {} # Filled in by the other modules which define the classes.
