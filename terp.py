@@ -5,42 +5,7 @@ AST interpreter
 from collections import namedtuple
 import itertools
 
-def trampoline(state):
-    k, value = state
-    while k is not None:
-#        traceback((k, value))
-        fn, free_var, k = k
-        k, value = fn(value, free_var, k)
-    return value
-
-def traceback(state):
-    k, value = state
-    print ':', value
-    while k:
-        fn, free_var, k = k
-        if isinstance(free_var, tuple) and free_var:
-            for i, element in enumerate(free_var):
-                print '%-18s %r' % (('' if i else fn.__name__), element)
-        else:
-            print '%-18s %r' % (fn.__name__, free_var)
-
-def call(receiver, selector, args, k):
-    return get_class(receiver).get_method(selector)(receiver, args, k)
-
-def get_class(x):
-    if   isinstance(x, Thing):     return x.class_
-    elif isinstance(x, bool):      return true_class if x else false_class
-    elif isinstance(x, num_types): return num_class
-    elif isinstance(x, str_types): return string_class
-    elif isinstance(x, Block):     return block_class
-    elif isinstance(x, Class):     return class_class # TODO: define .class_ on these?
-    elif callable(x):              return primitive_method_class # TODO: define this
-    elif x is None:                return nil_class # TODO: define
-    elif isinstance(x, list):      return array_class
-    else:                          assert False, "Classless datum"
-
-str_types = (str, unicode)
-num_types = (int, long, float)
+from core import trampoline, traceback, call, class_from_type, get_class
 
 class Thing(namedtuple('_Thing', 'class_ data')):
     def get(self, key):
@@ -52,6 +17,7 @@ class Thing(namedtuple('_Thing', 'class_ data')):
                            ', '.join(map(repr, self.data)))
 
 class Class(namedtuple('_Class', 'methods slots')):
+    class_ = None  # (stub, filled in below)
     def __init__(self, methods, slots):
         self.slot_index = dict(zip(slots, range(len(slots))))
     def get_method(self, selector):
@@ -77,6 +43,11 @@ class Class(namedtuple('_Class', 'methods slots')):
         return '<<Class %s | %s>>' % (' '.join(self.slots),
                                       self.methods)
 
+def new_method(receiver, arguments, k):
+    return k, receiver.make()
+
+Class.class_ = Class(dict(new=new_method), ())
+
 def cyclic_next(key, lot):
     it = itertools.cycle(lot)
     for x in it:
@@ -93,7 +64,14 @@ class Method(namedtuple('_Method', 'source code')):
     def __repr__(self):
         return repr(self.code)
 
+block_methods = {
+    'value':  lambda receiver, arguments, k: receiver.enter(arguments, k),
+    'value:': lambda receiver, arguments, k: receiver.enter(arguments, k),
+}
+block_class = Class(block_methods, ())
+
 class Block(namedtuple('_Block', 'me env code')):
+    class_ = block_class
     def enter(self, arguments, k):
         return self.code.enter(self.me, arguments, self.env, k)
     def __repr__(self):
@@ -132,16 +110,12 @@ class Env(namedtuple('_Env', 'rib container')):
     def __repr__(self):
         return 'Env(%r, %r)' % (self.rib, self.container)
 
-def new_method(receiver, arguments, k):
-    return k, receiver.make()
+num_types = (int, long, float)
 
-class_class = Class(dict(new=new_method), ())
-
-block_methods = {
-    'value':  lambda receiver, arguments, k: receiver.enter(arguments, k),
-    'value:': lambda receiver, arguments, k: receiver.enter(arguments, k),
-}
-block_class = Class(block_methods, ())
+def as_number(thing):
+    if isinstance(thing, num_types):
+        return thing
+    assert False, "Not a number: %r" % (thing,)
 
 num_methods = {
     '+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
@@ -151,11 +125,8 @@ num_methods = {
     '<': lambda rcvr, (other,), k: (k, rcvr < other),
 }
 num_class = Class(num_methods, ())
-
-def as_number(thing):
-    if isinstance(thing, num_types):
-        return thing
-    assert False, "Not a number: %r" % (thing,)
+for nt in num_types:
+    class_from_type[nt] = num_class
 
 def find_default(rcvr, (other, default), k):
     try:
@@ -171,7 +142,9 @@ def add(rcvr, (other,), k):  return (k, rcvr + other)
 def eq(rcvr, (other,), k):   return (k, rcvr == other)
 def lt(rcvr, (other,), k):   return (k, rcvr < other)
 
-def as_string(thing):
+str_types = (str, unicode)
+
+def as_string(thing):           # TODO not used?
     if isinstance(thing, str_types):
         return thing
     assert False, "Not a string: %r" % (thing,)
@@ -187,6 +160,8 @@ string_methods = {
     '<':     lt,
 }
 string_class = Class(string_methods, ())
+class_from_type[str] = string_class
+class_from_type[unicode] = string_class
 
 def array_append(receiver, (arg,), k):
     receiver.append(arg)
@@ -204,6 +179,11 @@ array_methods = {
     'append:': array_append,
 }
 array_class = Class(array_methods, ())
+class_from_type[list] = array_class
+
+nil_methods = {}
+nil_class = Class(nil_methods, ())
+class_from_type[type(None)] = nil_class
 
 class Self(namedtuple('_Self', '')):
     def eval(self, me, env, k):
@@ -355,8 +335,10 @@ global_env.adjoin('Make-array', Thing(make_array_class, ()))
 true_class = Class({}, ())   # Filled in at startup
 false_class = Class({}, ())  # ditto
 
+
+
 #global_env.adjoin('Object', thing_class)
-global_env.adjoin('Class',  class_class)
+global_env.adjoin('Class',  Class.class_)
 global_env.adjoin('Block',  block_class)
 global_env.adjoin('Number', num_class)
 global_env.adjoin('String', string_class)
