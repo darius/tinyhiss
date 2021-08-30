@@ -43,12 +43,12 @@ operand     :  block
             |  reserved
             |  my name            :mk_slot_get
             |  name               :mk_var_get
-            |  /-?(\d+)/          :mk_int  # TODO add base-r literals, floats, and scaled decimals
+            |  /(-?\d+)/          :mk_int  # TODO add base-r literals, floats, and scaled decimals
             |  string_literal     :mk_string
             |  '(' stmt ')'.
 
 block       :  '{' block_args? :hug code '}' :mk_block.
-block_args  :  (':' name)* '|'.
+block_args  :  (':' name)+ '|'.
 
 reserved   ~:  'nil'   !idchar _  :mk_nil
             |  'false' !idchar _  :mk_false
