@@ -68,7 +68,7 @@ string_literal
 qchar      ~:  /'(')/ | /([^'])/.
 
 _          ~:  whitespace*.
-whitespace ~:  /\s/ | comment.
+whitespace ~:  /\s/ | comment | '###' :anyone*.
 comment    ~:  /--[>|\s][^\n]*/.
 
 FNORD      ~:  whitespace*.
