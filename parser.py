@@ -44,7 +44,7 @@ operand     :  block
             |  reserved
             |  my name            :mk_slot_get
             |  name               :mk_var_get
-            |  /(-?\d+(?:[.]\d+)?(?:e\d+)?)/ :mk_num  # TODO add base-r literals, floats, and scaled decimals
+            |  /(-?\d+(?:[.]\d+)?(?:e\d+)?)/ :mk_num  # TODO add base-r literals
             |  string_literal     :mk_string
             |  '(' stmt ')'
             |  '[' expr**'.' '.'? ']' :hug :mk_array.
