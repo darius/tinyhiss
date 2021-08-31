@@ -4,6 +4,7 @@ Based on http://chronos-st.blogspot.com/2007/12/smalltalk-in-one-page.html
 
 from parson import Grammar
 import terp
+from primitive import number_from_string
 
 # This is an unusual grammar in that Parson's "keyword" syntax would
 # do the wrong thing, because identifiers can include dashes. Instead
@@ -43,7 +44,7 @@ operand     :  block
             |  reserved
             |  my name            :mk_slot_get
             |  name               :mk_var_get
-            |  /(-?\d+)/          :mk_int  # TODO add base-r literals, floats, and scaled decimals
+            |  /(-?\d+(?:[.]\d+)?(?:e\d+)?)/ :mk_num  # TODO add base-r literals, floats, and scaled decimals
             |  string_literal     :mk_string
             |  '(' stmt ')'
             |  '[' expr**'.' '.'? ']' :hug :mk_array.
@@ -86,7 +87,7 @@ mk_nil    = lambda: terp.Constant(None)
 mk_false  = lambda: terp.Constant(False)
 mk_true   = lambda: terp.Constant(True)
 mk_self   = terp.Self
-mk_int    = lambda s: terp.Constant(int(s))
+mk_num    = lambda s: terp.Constant(number_from_string(s))
 mk_string = lambda s: terp.Constant(s)
 
 mk_slot_get = terp.SlotGet

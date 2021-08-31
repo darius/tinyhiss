@@ -77,8 +77,14 @@ def lt(rcvr, (other,), k):   return (k, rcvr < other)
 
 def myself(rcvr, args, k):   return (k, rcvr)
 def to_string(rcvr, args, k): return (k, str(rcvr))
-def to_int(rcvr, args, k):   return (k, int(rcvr))
+def to_number(rcvr, args, k): return (k, number_from_string(rcvr))
 def join(rcvr, (other,), k): return (k, rcvr.join(other))
+
+def number_from_string(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
 
 str_types = (str, unicode)
 
@@ -94,7 +100,7 @@ string_methods = {
     '<':     lt,
     'join:': join,
     'string': myself,
-    'integer': to_int,
+    'number': to_number,
 }
 string_class = Class(string_methods, ())
 class_from_type[str] = string_class
@@ -137,7 +143,7 @@ num_methods = {
     '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
     '<': lambda rcvr, (other,), k: (k, rcvr < other),
     'string': to_string,
-    'integer': to_int,
+    'number': myself,
 }
 num_class = Class(num_methods, ())
 for nt in num_types:
