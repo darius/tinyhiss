@@ -33,7 +33,10 @@ stmt        :  my name ':=' expr :mk_slot_put
             |  '^' expr :mk_return
             |  expr.
 
-expr        :  operand (m1 :mk_send (';' m1 :mk_cascade)*)?.
+expr        :  operand cascading.
+cascading   =  m1 (';' :mk_cascade cascading | :mk_send)
+            |  .
+
 m1          :  unary_selector m1? :mk_m1 | m2.
 e1          :  operand (unary_selector :mk_e1)*.
 m2          :  binary_selector e1 m2? :mk_m2 | m3.
@@ -110,7 +113,6 @@ mk_return = lambda e: XXX
 
 def mk_cascade(operand, m1):
     send = m1(operand)
-    # XXX I think the innermost Send still needs to be rewritten
     return terp.Cascade(send.subject, send.selector, send.operands)
 
 def mk_send(operand, m1):
@@ -143,7 +145,7 @@ def parse_code(text):
 #. ((), (2 + (3 negate)))
 
 ## grammar.code('a b; c; d')
-#. ((), (((a b); c); d))
+#. ((), (((a b;) c;) d))
 
 ## grammar.top_code("2")
 #. ((), 2)

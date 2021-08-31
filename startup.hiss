@@ -25,11 +25,11 @@ me = 0
 + Counting-up from: i
   my i := i
 !
-+ Counting-up till: bound
-  my bound := bound
-!
 + Counting-up by: step
   my step := step
+!
++ Counting-up till: bound
+  my bound := bound
 !
 + Counting-up thru: bound
   my bound := bound + my step
@@ -41,20 +41,20 @@ me = 0
               I do: block}
 !
 + Number till: bound by: step do: block
-  (Counting-up new; by: step; from: me; till: bound) do: block
+  (Counting-up new by: step; from: me; till: bound) do: block
 !
 + Number till: bound do: block
   me till: bound by: 1 do: block
 !
 + Number thru: last by: step do: block
-  (Counting-up new; by: step; from: me; thru: last) do: block
+  (Counting-up new by: step; from: me; thru: last) do: block
 !
 + Number thru: last do: block
   me thru: last by: 1 do: block
 !
 > Make-class named: 'Log-class' with-slots: 'chunks'
 !
-+ Log-class erase
++ Log-class clear
   my chunks := []
 !
 + Log-class show
@@ -68,5 +68,5 @@ me = 0
   my chunks append: x string    -- TODO string method
 !
 > Globals at: 'Log' adjoin: Log-class new.
-Log erase.
+Log clear.
 !

@@ -128,14 +128,14 @@ class Send(namedtuple('_Send', 'subject selector operands')):
         return send_repr(self)
 
 def send_repr(self, sep=''):
-    subject = repr(self.subject) + sep
+    subject = repr(self.subject)
     if len(self.operands) == 0:
-        return '(%s %s)' % (subject, self.selector)
+        return '(%s %s%s)' % (subject, self.selector, sep)
     elif len(self.operands) == 1:
-        return '(%s %s %r)' % (subject, self.selector, self.operands[0])
+        return '(%s %s %r%s)' % (subject, self.selector, self.operands[0], sep)
     else:
         pairs = zip(self.selector.split(':'), self.operands)
-        return '(%s%s)' % (subject, ''.join(' %s: %r' % pair for pair in pairs))
+        return '(%s%s%s)' % (subject, ''.join(' %s: %r' % pair for pair in pairs), sep)
 
 def evrands_k(subject, (send, me, env), k):
     return evrands(send.operands, me, env,
