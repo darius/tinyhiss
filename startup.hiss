@@ -52,3 +52,21 @@ me = 0
 + Number thru: last do: block
   me thru: last by: 1 do: block
 !
+> Make-class named: 'Log-class' with-slots: 'chunks'
+!
++ Log-class erase
+  my chunks := []
+!
++ Log-class show
+  '' join: my chunks
+!
++ Log-class nl
+  my chunks append: '
+' -- TODO '\n' literal
+!
++ Log-class say: x
+  my chunks append: x string    -- TODO string method
+!
+> Globals at: 'Log' adjoin: Log-class new.
+Log erase.
+!

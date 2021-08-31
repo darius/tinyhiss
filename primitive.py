@@ -75,12 +75,12 @@ def mul(rcvr, (other,), k):  return (k, rcvr * other)
 def eq(rcvr, (other,), k):   return (k, rcvr == other)
 def lt(rcvr, (other,), k):   return (k, rcvr < other)
 
-str_types = (str, unicode)
+def myself(rcvr, args, k):   return (k, rcvr)
+def to_string(rcvr, args, k): return (k, str(rcvr))
+def to_int(rcvr, args, k):   return (k, int(rcvr))
+def join(rcvr, (other,), k): return (k, rcvr.join(other))
 
-def as_string(thing):           # TODO not used?
-    if isinstance(thing, str_types):
-        return thing
-    assert False, "Not a string: %r" % (thing,)
+str_types = (str, unicode)
 
 string_methods = {
     'has:':  has,
@@ -92,6 +92,9 @@ string_methods = {
     '*':     mul,
     '=':     eq,
     '<':     lt,
+    'join:': join,
+    'string': myself,
+    'integer': to_int,
 }
 string_class = Class(string_methods, ())
 class_from_type[str] = string_class
@@ -133,6 +136,8 @@ num_methods = {
     '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
     '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
     '<': lambda rcvr, (other,), k: (k, rcvr < other),
+    'string': to_string,
+    'integer': to_int,
 }
 num_class = Class(num_methods, ())
 for nt in num_types:
