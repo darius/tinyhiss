@@ -169,9 +169,17 @@ def then_k(_, (then_, me, env), k):
 
 # Environments.  TODO move this elsewhere?
 
+env_methods = {
+    'at:':        lambda env, (key,), k: (k, env.get(key)),
+    'at:adjoin:': lambda env, (key, value), k: (k, env.adjoin(key, value)),
+    'at:put:':    lambda env, (key, value), k: (k, env.put(key, value)),
+}
+
 class Env(namedtuple('_Env', 'rib container')):
+    class_ = Class(env_methods, ())
     # The following two methods are meant only for the global env and
-    # the workspace:
+    # the workspace. XXX This gets problematic when we expose local
+    # envs to the user.
     def adjoin(self, key, value):
         self.rib[key] = value
     def install(self, key, default):
@@ -224,3 +232,5 @@ global_env.adjoin('False',  primitive.false_class)
 global_env.adjoin('Number', primitive.num_class)
 global_env.adjoin('String', primitive.string_class)
 global_env.adjoin('True',   primitive.true_class)
+
+global_env.adjoin('Globals', global_env)
