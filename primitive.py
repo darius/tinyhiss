@@ -15,7 +15,7 @@ class Thing(namedtuple('_Thing', 'class_ data')):
         return '%r(%s)' % (self.class_,
                            ', '.join(map(repr, self.data)))
 
-class Class(namedtuple('_Class', 'methods slots')):
+class Class(namedtuple('_Class', 'methods slots')): # TODO a name slot too?
     class_ = None  # (stub, filled in below)
     def __init__(self, methods, slots):
         self.slot_index = dict(zip(slots, range(len(slots))))
@@ -23,7 +23,7 @@ class Class(namedtuple('_Class', 'methods slots')):
         try:
             return self.methods[selector]
         except KeyError:
-            assert False, "Unknown method: %r" % (selector,)
+            assert False, "Method %r unknown by %r" % (selector, self)
     def put_method(self, selector, method):
         self.methods[selector] = method
     def make(self):
@@ -110,9 +110,14 @@ def array_append(receiver, (arg,), k):
     receiver.append(arg)
     return k, None
 
+def at_put(rcvr, (i,value), k):
+    rcvr[i] = value
+    return (k, None)
+
 array_methods = {
     'has:':  has,
     'at:':   at,
+    'at:put:': at_put,
     'find:': find,
     'find:default:': find_default,
     'size':  size,

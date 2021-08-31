@@ -41,7 +41,8 @@ me = 0
               I do: block}
 !
 + Number till: bound by: step do: block
-  (Counting-up new by: step; from: me; till: bound) do: block
+--  (Counting-up new by: step; from: me; till: bound do: block
+  Counting-up new by: step; from: me; till: bound; do: block
 !
 + Number till: bound do: block
   me till: bound by: 1 do: block
@@ -51,6 +52,9 @@ me = 0
 !
 + Number thru: last do: block
   me thru: last by: 1 do: block
+!
++ Number times-do: block
+  0 till: me do: {:ignore | block value}
 !
 > Make-class named: 'Log-class' with-slots: 'chunks'
 !
@@ -69,4 +73,35 @@ me = 0
 !
 > Globals at: 'Log' adjoin: Log-class new.
 Log clear.
+!
++ Array fill-with: value
+  0 till: me size do: { :i | me at: i put: value }
+!
+> Make-class named: 'Demos' with-slots: ''
+!
++ Demos sieve
+-- Sieve of Eratosthenes benchmark.
+
+| size flags count |
+
+size := 8191.
+flags := [nil] * size.
+
+Log say: '1 iterations'; nl.  -- XXX 10
+
+1 times-do: {  -- XXX make this 10
+  count := 0.
+  flags fill-with: true.
+  0 till: size do: { :i |
+    (flags at: i) if-so: {
+      |prime| prime := i + i + 3.
+      (i + prime) till: size by: prime do: { :k |
+        flags at: k put: false
+      }.
+      count := count + 1.
+    }.
+  }.
+}.
+
+Log say: count; say: ' primes'; nl.
 !
