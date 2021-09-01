@@ -36,6 +36,9 @@ class Code(namedtuple('_Code', 'params locals expr')):
     def eval(self, me, env, k):
         return k, Block(me, env, self)
     def enter(self, me, arguments, parent_env, k):
+        if len(self.params) != len(arguments):
+            raise Exception("Block wants parameters %s but received %d arguments"
+                            % (self.params, len(arguments)))
         rib = dict(zip(self.params, arguments))
         for name in self.locals:
             rib[name] = None
