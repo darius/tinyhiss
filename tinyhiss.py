@@ -30,25 +30,29 @@ def workspace_run(text):
     return core.trampoline(block.enter((), core.final_k))
 
 @bind(C('j'))
-def smalltalk_print_it(buf):
+def buf_print_it(buf):
     bol, eol = buf.start_of_line(buf.point), buf.end_of_line(buf.point)
     line = buf.text[bol:eol]
     # XXX hacky error-prone matching; move this to parser module
     old_result = buf.text.find(' --> ', bol, eol)
     if old_result == -1: old_result = buf.text.find(' --| ', bol, eol)
     if old_result == -1: old_result = eol
+    comment, result = print_it(line)
+    buf.replace(old_result, eol,
+                ' %s %s' % (comment, result.replace('\n', ' / ')))
+
+def print_it(line, show_traceback=False):
     try:
         comment = '-->'
         result = repr(workspace_run(line))
     except:
         comment = '--|'
-        if False:               # Set to True for tracebacks
+        if show_traceback:
             result = traceback.format_exc()
         else:
             result = format_exception(sys.exc_info())
-    buf.replace(old_result, eol,
-                ' %s %s' % (comment, result.replace('\n', ' / ')))
-
+    return comment, result
+    
 def format_exception((etype, value, tb), limit=None):
     lines = traceback.format_exception_only(etype, value)
     return '\n'.join(lines).rstrip('\n')
