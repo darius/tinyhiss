@@ -26,7 +26,12 @@ binary_selector :  /([~!@%&*\-+=|\\<>,?\/]+)/.
 code        :  locals? :hug opt_stmts.
 locals      :  '|' name* '|'.
 opt_stmts   :  stmts | :mk_nil.
-stmts       :  stmt ('.' stmt :mk_then)* '.'?.
+stmts       :  stmt (dot stmt :mk_then)* dot?.
+
+dot        ~=  '.' !/\w/ _.  # Stmt terminator. The idea behind the !/w/ is a
+                             # wanting to rule out confusing cases like 1.2.3
+                             # which would otherwise parse as 1.2 . 3
+                             # TODO see if you have a better idea.
 
 stmt        :  my name ':=' expr :mk_slot_put
             |     name ':=' expr :mk_local_put
@@ -47,10 +52,10 @@ operand     :  block
             |  reserved
             |  my name            :mk_slot_get
             |  name               :mk_var_get
-            |  /(-?\d+(?:[.]\d+)?(?:e\d+)?)/ :mk_num  # TODO add base-r literals
+            |  /(-?\d+(?:[.]\d+)?(?:e-?\d+)?)/ :mk_num  # TODO add base-r literals
             |  string_literal     :mk_string
             |  '(' stmt ')'
-            |  '[' expr**'.' '.'? ']' :hug :mk_array.
+            |  '[' expr**dot dot? ']' :hug :mk_array.
 
 block       :  '{' block_args? :hug code '}' :mk_block.
 block_args  :  (':' name)+ '|'.
