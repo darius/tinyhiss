@@ -144,3 +144,16 @@ sum
 ###
 Demos new oiler1: 200 --> 
 !
++ Demos move-tower: height from: f-pin to: t-pin using: u-pin
+-- Tower of Hanoi.
+
+(height > 0) if-so: {
+  I move-tower: (height - 1) from: f-pin to: u-pin using: t-pin.
+  Log say: f-pin; say: ' -> '; say: t-pin; nl.
+  I move-tower: (height - 1) from: u-pin to: t-pin using: f-pin.
+}
+
+###
+Demos new move-tower: 3 from: 1 to: 3 using: 2. -->
+Log show -->
+!
