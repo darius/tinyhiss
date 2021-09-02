@@ -2,6 +2,8 @@
 The kernel: stepping and calling.
 """
 
+tracing = False
+
 def trampoline(state):
     k, value = state
     while k is not None:
@@ -24,6 +26,8 @@ def traceback(state):
             print '%-18s %r' % (fn.__name__, free_var)
 
 def call(receiver, selector, args, k):
+    if tracing:
+        print '.... %14s %r' % (selector, receiver)
     return get_class(receiver).get_method(selector)(receiver, args, k)
 
 def get_class(x):
