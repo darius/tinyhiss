@@ -3,7 +3,6 @@ AST interpreter
 """
 
 from collections import namedtuple
-import itertools
 
 from core import call, class_from_type
 import primitive

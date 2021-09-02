@@ -2,7 +2,7 @@
 Primitive data types
 """
 from __future__ import division
-
+import itertools
 from collections import namedtuple
 
 from core import call, class_from_type

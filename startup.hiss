@@ -7,6 +7,12 @@
 + True if-not: true-block
   nil
 !
++ True and: block
+  block value
+!
++ True or: block
+  me
+!
 + False if-so: true-block if-not: false-block
   false-block value
 !
@@ -15,6 +21,12 @@
 !
 + False if-not: false-block
   false-block value
+!
++ False and: block
+  me
+!
++ False or: block
+  block value
 !
 + Tutorial part1
 
@@ -117,7 +129,18 @@ Log say: count; say: ' primes'; nl.
   (n%3 = 0) if-so: {Log say: 'Fizz'}.
   (n%5 = 0) if-so: {Log say: 'Buzz'}.
   (n%3 = 0) if-not: {(n%5 = 0) if-not: {Log say: n}}.   -- TODO ugh
---  ((n%3) + (n%5) > 0) if-so: {Log say: n}.
   Log nl.
 }
+!
++ Demos oiler1: n
+-- (The method name is a misspelling of Project You-know-who, problem #1.)
+
+|sum|
+sum := 0.
+3 till: n do: {:i |
+  ((i%3=0) or: {i%5=0}) if-so: {sum := sum + i}.
+}.
+sum
+###
+Demos new oiler1: 200 --> 
 !
