@@ -1,6 +1,7 @@
 """
 Primitive data types
 """
+from __future__ import division
 
 from collections import namedtuple
 
@@ -74,6 +75,7 @@ def add(rcvr, (other,), k):  return (k, rcvr + other)
 def mul(rcvr, (other,), k):  return (k, rcvr * other)
 def eq(rcvr, (other,), k):   return (k, rcvr == other)
 def lt(rcvr, (other,), k):   return (k, rcvr < other)
+def gt(rcvr, (other,), k):   return (k, rcvr > other)
 
 def myself(rcvr, args, k):   return (k, rcvr)
 def to_string(rcvr, args, k): return (k, str(rcvr))
@@ -98,6 +100,7 @@ string_methods = {
     '*':     mul,
     '=':     eq,
     '<':     lt,
+    '>':     gt,
     'join:': join,
     'string': myself,
     'number': to_number,
@@ -125,6 +128,7 @@ array_methods = {
     '*':     mul,
     '=':     eq,
     '<':     lt,
+    '>':     gt,
     'append:': array_append,
 }
 array_class = Class(array_methods, ())
@@ -143,10 +147,13 @@ def as_number(thing):
 
 num_methods = {
     '+': lambda rcvr, (other,), k: (k, rcvr + as_number(other)),
-    '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
     '-': lambda rcvr, (other,), k: (k, rcvr - as_number(other)),
-    '=': lambda rcvr, (other,), k: (k, rcvr == other), # XXX object method
-    '<': lambda rcvr, (other,), k: (k, rcvr < other),
+    '*': lambda rcvr, (other,), k: (k, rcvr * as_number(other)),
+    '/': lambda rcvr, (other,), k: (k, rcvr / as_number(other)),
+    '%': lambda rcvr, (other,), k: (k, rcvr % as_number(other)),
+    '=': eq,
+    '<': lt,
+    '>': gt,
     'string': to_string,
     'number': myself,
 }

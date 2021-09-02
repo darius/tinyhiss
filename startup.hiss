@@ -4,11 +4,17 @@
 + True if-so: true-block
   true-block value
 !
++ True if-not: true-block
+  nil
+!
 + False if-so: true-block if-not: false-block
   false-block value
 !
 + False if-so: true-block
   nil
+!
++ False if-not: false-block
+  false-block value
 !
 + Tutorial part1
 
@@ -48,7 +54,7 @@ me = 0
   me till: bound by: 1 do: block
 !
 + Number thru: last by: step do: block
-  (Counting-up new by: step; from: me; thru: last) do: block
+  Counting-up new by: step; from: me; thru: last; do: block
 !
 + Number thru: last do: block
   me thru: last by: 1 do: block
@@ -104,4 +110,14 @@ Log say: '1 iterations'; nl.  -- XXX 10
 }.
 
 Log say: count; say: ' primes'; nl.
+!
++ Demos fizzbuzz
+
+1 thru: 100 do: {:n |
+  (n%3 = 0) if-so: {Log say: 'Fizz'}.
+  (n%5 = 0) if-so: {Log say: 'Buzz'}.
+  (n%3 = 0) if-not: {(n%5 = 0) if-not: {Log say: n}}.   -- TODO ugh
+--  ((n%3) + (n%5) > 0) if-so: {Log say: n}.
+  Log nl.
+}
 !
