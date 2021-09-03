@@ -15,6 +15,7 @@ def repl(show_traceback=True, show_parse=False):
             line = raw_input('> ')
         except EOFError:
             break
+
         if line.startswith('.'): # Command
             cmd = line[1:2]
             arg = line[2:].strip()
@@ -46,8 +47,15 @@ def repl(show_traceback=True, show_parse=False):
         if show_parse:
             code = parser.parse_code(line)
             print '#', code
+
         comment, result = tinyhiss.print_it(line, show_traceback)
+        print_log()
         print comment + ' ' + result
+
+def print_log():
+    s = tinyhiss.workspace_run("|s| s := Log show. Log clear. s")  # TODO no simpler code?
+    if s:
+        print '--. ' + s.replace('\n', '\n--. ')
 
 def cmd_help():
     print """\
