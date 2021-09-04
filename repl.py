@@ -7,9 +7,11 @@ import core, hiss, parser, tinyhiss
 
 def main(argv):
     hiss.start_up()
-    repl()
+    with open('transcript', 'a') as f:
+        f.write('\n')
+        repl(transcript=f)
 
-def repl(show_traceback=True, show_parse=False):
+def repl(show_traceback=True, show_parse=False, transcript=None):
     while True:
         try:
             line = raw_input('> ')
@@ -49,13 +51,18 @@ def repl(show_traceback=True, show_parse=False):
             print '#', code
 
         comment, result = tinyhiss.print_it(line, show_traceback)
-        print_log()
+        if transcript: transcript.write('> %s\n' % line)
+        log = spill_log()
+        if log:
+            log = '--. ' + log.replace('\n', '\n--. ')
+            print log
+            if transcript: transcript.write('%s\n' % log)
         print comment + ' ' + result
+        if transcript: transcript.write('--> %s\n' % result)
 
-def print_log():
+def spill_log():
     s = tinyhiss.workspace_run("|s| s := Log show. Log clear. s")  # TODO no simpler code?
-    if s:
-        print '--. ' + s.replace('\n', '\n--. ')
+    return s
 
 def cmd_help():
     print """\

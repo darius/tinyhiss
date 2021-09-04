@@ -41,7 +41,7 @@ def buf_print_it(buf):
     buf.replace(old_result, eol,
                 ' %s %s' % (comment, result.replace('\n', ' / ')))
 
-def print_it(line, show_traceback=False):
+def print_it(line, show_traceback=False): # XXX of course this doesn't actually print
     try:
         comment = '-->'
         result = repr(workspace_run(line))
