@@ -98,11 +98,12 @@ Log clear.
 > Make-class named: 'Demos' with-slots: ''
 !
 + Demos sieve
--- Sieve of Eratosthenes benchmark.
+  -- Sieve of Eratosthenes benchmark.
+  me sieve: 8191
+!
++ Demos sieve: size
 
-| size flags count |
-
-size := 8191.
+| flags count |
 flags := [nil] * size.
 
 Log say: '1 iterations'; nl.  -- XXX 10
