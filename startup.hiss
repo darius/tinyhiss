@@ -59,7 +59,6 @@ me = 0
               I do: block}
 !
 + Number till: bound by: step do: block
---  (Counting-up new by: step; from: me; till: bound do: block
   Counting-up new by: step; from: me; till: bound; do: block
 !
 + Number till: bound do: block
